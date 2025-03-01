@@ -260,9 +260,12 @@ export function Sidebar() {
             isMobileMenuOpen && "px-4"
           )}
         >
-          <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text">
+          <Link
+            href="/"
+            className="text-xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text hover:opacity-80 transition-opacity"
+          >
             goonmates
-          </span>
+          </Link>
           <Button
             variant="ghost"
             size="icon"

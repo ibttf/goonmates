@@ -37,6 +37,8 @@ export default function ChatPage() {
     handleSubmit: originalHandleSubmit
   } = useChat()
 
+
+
   // Fetch character data
   useEffect(() => {
     async function loadCharacter() {
@@ -102,7 +104,6 @@ export default function ChatPage() {
 
         <MessageList 
           messages={filteredMessages} 
-          character={character} 
           isLoading={isLoading || isIntroLoading} 
         />
 

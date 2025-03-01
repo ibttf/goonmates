@@ -1,14 +1,12 @@
-import { Character } from "@/app/data/characters"
 import { MessageItem, Message } from "./MessageItem"
 import Image from "next/image"
 
 interface MessageListProps {
   messages: Message[]
-  character: Character
   isLoading: boolean
 }
 
-export function MessageList({ messages, character, isLoading }: MessageListProps) {
+export function MessageList({ messages, isLoading }: MessageListProps) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto w-full p-4 space-y-4">
@@ -16,7 +14,6 @@ export function MessageList({ messages, character, isLoading }: MessageListProps
           <MessageItem 
             key={msg.id || index} 
             message={msg} 
-            character={character} 
           />
         ))}
         
@@ -24,8 +21,8 @@ export function MessageList({ messages, character, isLoading }: MessageListProps
           <div className="flex gap-3 items-start">
             <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
               <Image
-                src={character.imageUrl}
-                alt={character.name}
+                src={"/avatar-placeholder.png"}
+                alt={"Loading..."}
                 width={32}
                 height={32}
                 className="h-full w-full object-contain"

@@ -1,7 +1,6 @@
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { Character } from "@/app/data/characters"
 
 export interface Message {
   role: "user" | "assistant"
@@ -14,10 +13,9 @@ export interface Message {
 
 interface MessageItemProps {
   message: Message
-  character: Character
 }
 
-export function MessageItem({ message, character }: MessageItemProps) {
+export function MessageItem({ message }: MessageItemProps) {
   return (
     <div
       className={cn(
@@ -28,8 +26,8 @@ export function MessageItem({ message, character }: MessageItemProps) {
       {message.role === "assistant" && (
         <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
           <Image
-            src={character.imageUrl}
-            alt={character.name}
+            src={message.imageUrl || "/avatar-placeholder.png"}
+            alt={message.content}
             width={32}
             height={32}
             className="h-full w-full object-contain"

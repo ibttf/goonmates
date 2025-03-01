@@ -10,7 +10,6 @@ import { useSidebar } from "@/app/components/layout/Sidebar"
 
 // Default character for displaying messages
 const defaultCharacter: Character = {
-  id: "default",
   name: "Character",
   age: 25,
   description: "AI Character",

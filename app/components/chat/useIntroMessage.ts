@@ -1,8 +1,19 @@
 import { useState, useEffect } from "react"
-import { Character } from "@/app/data/characters"
+import { Character } from "@/lib/characters"
 import { Message } from "./MessageItem"
 
-export function useIntroMessage(character: Character | undefined, messagesLength: number) {
+interface UseIntroMessageResult {
+  filteredMessages: Message[];
+  customMessages: Message[];
+  isIntroLoading: boolean;
+  resetIntro: () => void;
+}
+
+export function useIntroMessage(
+  character: Character | null | undefined, 
+  messagesLength: number,
+  chatMessages: Message[] = []
+): UseIntroMessageResult {
   const [customMessages, setCustomMessages] = useState<Message[]>([])
   const [isIntroLoading, setIsIntroLoading] = useState(false)
   const [hasShownIntro, setHasShownIntro] = useState(false)
@@ -101,7 +112,17 @@ export function useIntroMessage(character: Character | undefined, messagesLength
     setHasShownIntro(false)
   }
 
+  // Filter out any image messages and combine with custom messages
+  const filteredMessages = [
+    ...customMessages.filter(msg => !msg.isImage), 
+    ...chatMessages.filter(msg => !msg.imageUrl).map(msg => ({
+      ...msg,
+      isImage: false
+    }))
+  ] as Message[]
+
   return {
+    filteredMessages,
     customMessages,
     isIntroLoading,
     resetIntro

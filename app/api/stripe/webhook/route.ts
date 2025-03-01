@@ -197,8 +197,6 @@ export async function POST(req: Request) {
       let customerId: string | undefined
       let subscriptionId: string | undefined
       let isSetupMode = false
-      let isCreditsPayment = false
-      let creditsAmount: number | undefined
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session
@@ -206,48 +204,18 @@ export async function POST(req: Request) {
         customerId = session.customer as string
         subscriptionId = session.subscription as string
         isSetupMode = session.mode === "setup"
-        isCreditsPayment = session.metadata?.type === "credits_purchase"
-        creditsAmount = session.metadata?.credits_amount
-          ? parseInt(session.metadata.credits_amount)
-          : undefined
 
         console.log("Checkout session details:", {
           userId,
           customerId,
           subscriptionId,
           mode: session.mode,
-          metadata: session.metadata,
-          isCreditsPayment,
-          creditsAmount
+          metadata: session.metadata
         })
 
         // If this is just a setup session, return early
         if (isSetupMode) {
           console.log("Setup session completed; no subscription update needed.")
-          return NextResponse.json({ received: true })
-        }
-
-        // Handle credits purchase
-        if (isCreditsPayment && userId && creditsAmount) {
-          console.log("Processing credits purchase:", { userId, creditsAmount })
-
-          const { error: creditsError } = await supabase.rpc(
-            "increment_credits",
-            {
-              p_user_id: userId,
-              p_credits_amount: creditsAmount
-            }
-          )
-
-          if (creditsError) {
-            console.error("Error updating credits:", creditsError)
-            return NextResponse.json(
-              { error: "Error updating credits" },
-              { status: 500 }
-            )
-          }
-
-          console.log("Successfully updated credits for user:", userId)
           return NextResponse.json({ received: true })
         }
 
@@ -268,7 +236,6 @@ export async function POST(req: Request) {
               user_id: userId,
               status: subscription.status,
               plan: "pro",
-              credits: 50, // Initial credits for new subscription
               current_period_start: new Date(
                 subscription.current_period_start * 1000
               ).toISOString(),
@@ -304,37 +271,6 @@ export async function POST(req: Request) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
         userId = paymentIntent.metadata?.user_id
         customerId = paymentIntent.customer as string
-        isCreditsPayment = paymentIntent.metadata?.type === "credits_purchase"
-        creditsAmount = paymentIntent.metadata?.credits_amount
-          ? parseInt(paymentIntent.metadata.credits_amount)
-          : undefined
-
-        // Handle credits purchase
-        if (isCreditsPayment && userId && creditsAmount) {
-          console.log("Processing credits purchase from payment intent:", {
-            userId,
-            creditsAmount
-          })
-
-          const { error: creditsError } = await supabase.rpc(
-            "increment_credits",
-            {
-              p_user_id: userId,
-              p_credits_amount: creditsAmount
-            }
-          )
-
-          if (creditsError) {
-            console.error("Error updating credits:", creditsError)
-            return NextResponse.json(
-              { error: "Error updating credits" },
-              { status: 500 }
-            )
-          }
-
-          console.log("Successfully updated credits for user:", userId)
-          return NextResponse.json({ received: true })
-        }
 
         // If this is a subscription-related payment
         if (paymentIntent.metadata?.subscriptionId) {
@@ -346,7 +282,6 @@ export async function POST(req: Request) {
             metadata: paymentIntent.metadata
           })
         } else {
-          // Otherwise, probably a one-time payment or setup
           console.log("Payment succeeded without subscription:", {
             userId,
             customerId,

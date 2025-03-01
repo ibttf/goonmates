@@ -65,8 +65,8 @@ export async function POST(req: Request) {
           type: "credits_purchase",
           credits_amount: "50"
         },
-        success_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/settings?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/settings?purchase_canceled=true`
+        success_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/?purchase_canceled=true`
       })
 
       console.log("Created checkout session:", checkoutSession.id)

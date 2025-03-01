@@ -11,7 +11,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { FaCommentAlt, FaCompass, FaHeart } from "react-icons/fa"
 import Link from "next/link"
-import { supabase } from "@/lib/supabase/client"
+import { usePathname } from "next/navigation"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 // Sidebar Context
 const SidebarContext = createContext<{
@@ -84,7 +85,8 @@ function NavItem({
                 "w-full flex items-center gap-x-4 bg-transparent hover:bg-[#1A1A1A] text-white hover:text-white rounded-md cursor-pointer px-3 h-11",
                 variant === "premium" &&
                   "bg-pink-500 hover:bg-pink-600 text-white hover:text-white",
-                !expanded && "justify-center px-0"
+                !expanded && "justify-center px-0",
+                active && "bg-[#1A1A1A] text-white"
               )}
               onClick={onClick}
             >
@@ -109,50 +111,41 @@ function NavItem({
   )
 }
 
+function NavItemSkeleton({ expanded }: { expanded: boolean }) {
+  return (
+    <div
+      className={cn(
+        "w-full flex items-center gap-x-4 bg-transparent rounded-md px-3 h-11",
+        !expanded && "justify-center px-0"
+      )}
+    >
+      <div className="h-5 w-5 rounded-md bg-gray-800 animate-pulse shrink-0" />
+      {expanded && (
+        <div className="h-4 w-24 bg-gray-800 rounded animate-pulse" />
+      )}
+    </div>
+  )
+}
+
 export function Sidebar() {
   const { isExpanded, setIsExpanded } = useSidebar()
-  const [session, setSession] = useState<any>(null)
-  const [isPremium, setIsPremium] = useState(false)
+  const {
+    user,
+    loading: userLoading,
+    isSubscribed,
+    signInWithGoogle
+  } = useAuth()
+  const pathname = usePathname()
+  const [loading, setLoading] = useState(false)
 
+  // Debug logging
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        // Fetch user's premium status
-        supabase
-          .from("users")
-          .select("status, plan")
-          .eq("user_id", session.user.id)
-          .single()
-          .then(({ data, error }) => {
-            // If no data or error, user is not premium
-            setIsPremium(data?.status === "active" && data?.plan === "premium")
-          })
-      }
-    })
+    console.log("Auth state:", { user, isSubscribed, loading: userLoading })
+  }, [user, isSubscribed, userLoading])
 
-    // Listen for auth changes
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session)
-      if (session?.user) {
-        // Fetch user's premium status
-        const { data, error } = await supabase
-          .from("users")
-          .select("status, plan")
-          .eq("user_id", session.user.id)
-          .single()
-        // If no data or error, user is not premium
-        setIsPremium(data?.status === "active" && data?.plan === "premium")
-      } else {
-        setIsPremium(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+  // Determine active states
+  const isExploreActive = pathname === "/"
+  const isChatActive = pathname.startsWith("/chat")
 
   const handleToggle = () => {
     setIsExpanded(!isExpanded)
@@ -160,15 +153,43 @@ export function Sidebar() {
 
   const handleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
-      })
-      if (error) throw error
+      await signInWithGoogle()
     } catch (error) {
       console.error("Error signing in:", error)
+    }
+  }
+
+  const handleCheckout = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          allow_promotion_codes: true
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to create checkout session")
+      }
+
+      const { url } = await response.json()
+      if (url) {
+        window.location.href = url
+      }
+    } catch (error) {
+      console.error("Error:", error)
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to start checkout. Please try again."
+      )
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -196,7 +217,7 @@ export function Sidebar() {
             variant="ghost"
             size="icon"
             className={cn(
-              "h-8 w-8 text-gray-400 hover:text-white",
+              "h-8 w-8 text-gray-400 hover:text-white z-20",
               !isExpanded && "absolute right-0"
             )}
             onClick={handleToggle}
@@ -212,111 +233,135 @@ export function Sidebar() {
         <div className="h-[1px] bg-[#222222] mb-4" />
 
         <div className="px-3 space-y-2">
-          <NavItem
-            icon={FaCompass}
-            label="Explore Models"
-            href="/explore"
-            expanded={isExpanded}
-            active={true}
-          />
-          <NavItem
-            icon={FaCommentAlt}
-            label="Chat"
-            href="/chat"
-            expanded={isExpanded}
-          />
+          {userLoading ? (
+            <>
+              <NavItemSkeleton expanded={isExpanded} />
+              <NavItemSkeleton expanded={isExpanded} />
+            </>
+          ) : (
+            <>
+              <NavItem
+                icon={FaCompass}
+                label="Explore Models"
+                href="/"
+                expanded={isExpanded}
+                active={isExploreActive}
+              />
+              <NavItem
+                icon={FaCommentAlt}
+                label="Chat"
+                href="/chat"
+                expanded={isExpanded}
+                active={isChatActive}
+              />
+            </>
+          )}
         </div>
 
         <div className="mt-auto px-3 pb-4 flex flex-col gap-4">
-          {session && !isPremium && (
+          {userLoading ? (
+            <div
+              className={cn(
+                "w-full h-11 bg-gray-800 rounded animate-pulse",
+                isExpanded ? "px-4" : "px-0"
+              )}
+            />
+          ) : (
             <>
-              {isExpanded ? (
-                <Link href="/upgrade" className="block">
-                  <div className="pl-4 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-sm hover:from-pink-600 hover:to-pink-700 transition-all duration-200 cursor-pointer">
-                    <div className="flex items-center gap-2">
-                      <FaHeart className="h-4 w-4" />
-                      <div className="text-sm font-bold relative">
-                        Unlock Goonmates
-                        <span className="absolute -top-1 -right-2 text-xs">
-                          +
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ) : (
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Link href="/upgrade">
-                        <Button className="w-full h-11 bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700">
-                          <FaHeart className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="right"
-                      sideOffset={10}
-                      className="select-none bg-black text-white border-[#333333]"
+              {user && !isSubscribed && (
+                <>
+                  {isExpanded ? (
+                    <Button
+                      onClick={handleCheckout}
+                      disabled={loading}
+                      className="w-full pl-4 py-5 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-sm hover:from-pink-600 hover:to-pink-700 transition-all duration-200 cursor-pointer"
                     >
-                      Upgrade to Premium
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                      <div className="flex items-center gap-2">
+                        <FaHeart className="h-4 w-4" />
+                        <div className="text-sm font-bold relative">
+                          {loading ? "Processing..." : "Unlock Goonmates"}
+                          <span className="absolute -top-1 -right-2 text-xs">
+                            +
+                          </span>
+                        </div>
+                      </div>
+                    </Button>
+                  ) : (
+                    <TooltipProvider delayDuration={100}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={handleCheckout}
+                            disabled={loading}
+                            className="w-full h-11 bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700"
+                          >
+                            <FaHeart className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="right"
+                          sideOffset={10}
+                          className="select-none bg-black text-white border-[#333333]"
+                        >
+                          Upgrade to Premium
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </>
+              )}
+
+              {!userLoading && !user && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 border-[#333333] bg-transparent text-white hover:bg-[#222222] hover:text-white"
+                  onClick={handleSignIn}
+                >
+                  {isExpanded ? (
+                    <div className="flex items-center justify-center gap-2 w-full">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <path
+                          fill="currentColor"
+                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        />
+                        <path
+                          fill="currentColor"
+                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        />
+                        <path
+                          fill="currentColor"
+                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        />
+                        <path
+                          fill="currentColor"
+                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        />
+                      </svg>
+                      Sign in
+                    </div>
+                  ) : (
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path
+                        fill="currentColor"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
+                    </svg>
+                  )}
+                </Button>
               )}
             </>
-          )}
-
-          {/* Sign In Button - Only show when not signed in */}
-          {!session && (
-            <Button
-              variant="outline"
-              className="w-full h-11 border-[#333333] bg-transparent text-white hover:bg-[#222222] hover:text-white"
-              onClick={handleSignIn}
-            >
-              {isExpanded ? (
-                <div className="flex items-center justify-center gap-2 w-full">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path
-                      fill="currentColor"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  Sign in
-                </div>
-              ) : (
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-              )}
-            </Button>
           )}
 
           {/* Footer Links */}

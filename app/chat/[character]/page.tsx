@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { ChatHeader } from "@/app/components/chat/ChatHeader"
 import { ChatInput } from "@/app/components/chat/ChatInput"
 import { MessageList } from "@/app/components/chat/MessageList"
@@ -14,7 +15,7 @@ import { cn } from "@/lib/utils"
 import { useParams } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
-export default function ChatPage() {
+function ChatPageContent() {
   const { isExpanded } = useSidebar()
   const params = useParams()
 
@@ -159,5 +160,19 @@ export default function ChatPage() {
         onSubscribe={() => handleCheckout({ allowPromotionCodes: true })}
       />
     </div>
+  )
+}
+
+export default function CharacterChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-500"></div>
+        </div>
+      }
+    >
+      <ChatPageContent />
+    </Suspense>
   )
 }

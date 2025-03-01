@@ -4,9 +4,11 @@ import { cn } from "@/lib/utils"
 import { CharacterGrid } from "./components/home/CharacterGrid"
 import { Hero } from "./components/home/Hero"
 import { Sidebar, useSidebar } from "./components/layout/Sidebar"
+import { useIsMobile } from "@/lib/hooks/use-mobile"
 
 export default function Home() {
   const { isExpanded } = useSidebar()
+  const isMobile = useIsMobile()
 
   return (
     <div className="flex flex-col min-h-screen bg-[#111111]">
@@ -23,7 +25,7 @@ export default function Home() {
         <main
           className={cn(
             "flex-1 p-6 transition-all duration-300",
-            isExpanded ? "md:ml-[240px]" : "md:ml-[72px]"
+            isMobile ? "pt-20" : isExpanded ? "md:ml-[240px]" : "md:ml-[72px]"
           )}
         >
           <Hero />

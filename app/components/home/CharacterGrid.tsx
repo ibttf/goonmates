@@ -47,7 +47,7 @@ export function CharacterGrid() {
                 </span>
               )}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               {characters.map((character) => (
                 <Link
                   href={`/chat/${character.name.toLowerCase()}`}
@@ -63,16 +63,16 @@ export function CharacterGrid() {
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                    <div className="absolute bottom-0 left-0 right-0 p-6 z-20 transition-transform duration-500 ease-out group-hover:-translate-y-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs text-pink-400 bg-pink-950/50 px-2 py-1 rounded-full">
+                    <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 z-20 transition-transform duration-500 ease-out group-hover:-translate-y-2">
+                      <div className="flex items-center gap-2 mb-0.5 sm:mb-1">
+                        <span className="text-[10px] text-pink-400 bg-pink-950/50 px-1.5 py-0.5 rounded-full">
                           {character.series}
                         </span>
                       </div>
-                      <h3 className="text-xl font-semibold text-white">
+                      <h3 className="text-base sm:text-xl font-semibold text-white">
                         {character.name} {character.age}
                       </h3>
-                      <p className="text-sm text-gray-300 mt-2 line-clamp-2 group-hover:line-clamp-none transition-all duration-500 ease-out">
+                      <p className="text-xs sm:text-sm text-gray-300 mt-1 sm:mt-2 line-clamp-2 group-hover:line-clamp-none transition-all duration-500 ease-out">
                         {character.personality}
                       </p>
                     </div>

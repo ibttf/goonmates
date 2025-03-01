@@ -7,12 +7,13 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Menu } from "lucide-react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { FaCommentAlt, FaCompass, FaHeart } from "react-icons/fa"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/lib/hooks/use-auth"
+import { useIsMobile } from "@/lib/hooks/use-mobile"
 
 // Sidebar Context
 const SidebarContext = createContext<{
@@ -50,9 +51,12 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 }
 
 const sidebarVariants = {
-  base: "fixed left-0 flex h-[calc(100vh)] flex-col bg-[#111111] transition-all duration-300",
+  base: "flex flex-col bg-[#111111] transition-all duration-300",
   collapsed: "w-[72px] border-r border-[#222222]",
-  expanded: "w-[240px] border-r border-[#222222]"
+  expanded: "w-[240px] border-r border-[#222222]",
+  mobile:
+    "fixed top-0 left-0 w-screen h-16 border-b border-[#222222] px-4 z-50 overflow-x-hidden",
+  mobileExpanded: "fixed inset-0 z-50 bg-[#111111] w-screen overflow-x-hidden"
 }
 
 function NavItem({
@@ -137,6 +141,8 @@ export function Sidebar() {
   } = useAuth()
   const pathname = usePathname()
   const [loading, setLoading] = useState(false)
+  const isMobile = useIsMobile()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Debug logging
   useEffect(() => {
@@ -148,7 +154,11 @@ export function Sidebar() {
   const isChatActive = pathname.startsWith("/chat")
 
   const handleToggle = () => {
-    setIsExpanded(!isExpanded)
+    if (isMobile) {
+      setIsMobileMenuOpen(!isMobileMenuOpen)
+    } else {
+      setIsExpanded(!isExpanded)
+    }
   }
 
   const handleSignIn = async () => {
@@ -193,10 +203,141 @@ export function Sidebar() {
     }
   }
 
+  if (isMobile) {
+    return (
+      <aside
+        className={cn(
+          sidebarVariants.base,
+          isMobileMenuOpen
+            ? sidebarVariants.mobileExpanded
+            : sidebarVariants.mobile
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center justify-between h-16 w-full",
+            isMobileMenuOpen && "px-4"
+          )}
+        >
+          <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text">
+            goonmates
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-gray-400 hover:text-white"
+            onClick={handleToggle}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {isMobileMenuOpen && (
+          <div className="flex flex-col flex-1 px-4 py-6 space-y-6 overflow-y-auto w-full">
+            <div className="space-y-2">
+              {userLoading ? (
+                <>
+                  <NavItemSkeleton expanded={true} />
+                  <NavItemSkeleton expanded={true} />
+                </>
+              ) : (
+                <>
+                  <NavItem
+                    icon={FaCompass}
+                    label="Explore Models"
+                    href="/"
+                    expanded={true}
+                    active={isExploreActive}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  />
+                  <NavItem
+                    icon={FaCommentAlt}
+                    label="Chat"
+                    href="/chat"
+                    expanded={true}
+                    active={isChatActive}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  />
+                </>
+              )}
+            </div>
+
+            <div className="mt-auto">
+              {user && !isSubscribed && (
+                <Button
+                  onClick={handleCheckout}
+                  disabled={loading}
+                  className="w-full pl-4 py-5 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-sm hover:from-pink-600 hover:to-pink-700 transition-all duration-200 cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <FaHeart className="h-4 w-4" />
+                    <div className="text-sm font-bold relative">
+                      {loading ? "Processing..." : "Unlock Goonmates"}
+                      <span className="absolute -top-1 -right-2 text-xs">
+                        +
+                      </span>
+                    </div>
+                  </div>
+                </Button>
+              )}
+
+              {!userLoading && !user && (
+                <Button
+                  variant="outline"
+                  className="w-full h-11 border-[#333333] bg-transparent text-white hover:bg-[#222222] hover:text-white"
+                  onClick={handleSignIn}
+                >
+                  <div className="flex items-center justify-center gap-2 w-full">
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path
+                        fill="currentColor"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                      />
+                      <path
+                        fill="currentColor"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                      />
+                    </svg>
+                    Sign in
+                  </div>
+                </Button>
+              )}
+
+              <div className="flex items-center justify-center text-xs gap-0.5 text-gray-400 mt-4">
+                <Link
+                  href="/privacy"
+                  className="hover:text-white transition-colors"
+                >
+                  Privacy Policy
+                </Link>
+                <span>•</span>
+                <Link
+                  href="/terms"
+                  className="hover:text-white transition-colors"
+                >
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+      </aside>
+    )
+  }
+
   return (
     <aside
       className={cn(
         sidebarVariants.base,
+        "fixed left-0 h-[calc(100vh)] hidden md:flex",
         isExpanded ? sidebarVariants.expanded : sidebarVariants.collapsed
       )}
     >

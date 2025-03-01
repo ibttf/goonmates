@@ -11,7 +11,8 @@ import { useSidebar } from "@/app/components/layout/Sidebar"
 import { useChat } from "ai/react"
 import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/app/providers"
-import { SubscriptionDialog } from "@/components/ui/subscription-dialog"
+import { SubscriptionDialog } from "@/app/components/ui/subscription-dialog"
+import Image from "next/image"
 
 interface Message {
   role: "user" | "assistant"
@@ -60,42 +61,44 @@ export default function ChatPage() {
     .flat()
     .find((char) => char.name.toLowerCase() === characterName)
 
-  if (!character) {
-    return <div>Character not found</div>
-  }
-
   // Show intro message if no messages and hasn't shown intro yet
   useEffect(() => {
+    let mounted = true
+
     const generateIntro = async () => {
-      if (messages.length === 0 && !hasShownIntro) {
-        setIsIntroLoading(true)
-        // Add initial loading message
-        const loadingMessage: Message = {
-          role: "assistant",
-          content: "...",
-          id: "intro-loading",
-          createdAt: new Date()
-        }
-        setCustomMessages([loadingMessage])
+      if (!mounted || !character || messages.length > 0 || hasShownIntro) {
+        return
+      }
 
-        try {
-          const response = await fetch("/api/intro", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              character: character.name,
-              series: character.series
-            })
+      setIsIntroLoading(true)
+      // Add initial loading message
+      const loadingMessage: Message = {
+        role: "assistant",
+        content: "...",
+        id: "intro-loading",
+        createdAt: new Date()
+      }
+      setCustomMessages([loadingMessage])
+
+      try {
+        const response = await fetch("/api/intro", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            character: character.name,
+            series: character.series
           })
+        })
 
-          if (!response.ok) {
-            throw new Error("Failed to generate intro")
-          }
+        if (!response.ok) {
+          throw new Error("Failed to generate intro")
+        }
 
-          const data = await response.json()
+        const data = await response.json()
 
+        if (mounted) {
           const introMessage: Message = {
             role: "assistant",
             content: data.content,
@@ -112,9 +115,11 @@ export default function ChatPage() {
           }
 
           setCustomMessages([introMessage, imageMessage])
-        } catch (error) {
-          console.error("Error generating intro:", error)
-          // Fallback to default intro if API fails
+        }
+      } catch (error) {
+        console.error("Error generating intro:", error)
+        // Fallback to default intro if API fails
+        if (mounted) {
           const fallbackMessage: Message = {
             role: "assistant",
             content: `Hey! I'm ${character.name} from ${character.series}. Let's chat! 😊`,
@@ -122,7 +127,9 @@ export default function ChatPage() {
             createdAt: new Date()
           }
           setCustomMessages([fallbackMessage])
-        } finally {
+        }
+      } finally {
+        if (mounted) {
           setIsIntroLoading(false)
           setHasShownIntro(true)
         }
@@ -130,6 +137,10 @@ export default function ChatPage() {
     }
 
     generateIntro()
+
+    return () => {
+      mounted = false
+    }
   }, [character, hasShownIntro, messages.length])
 
   const handleCheckout = async () => {
@@ -176,6 +187,10 @@ export default function ChatPage() {
     handleApiSubmit(e)
   }
 
+  if (!character) {
+    return <div>Character not found</div>
+  }
+
   return (
     <div className="flex flex-col w-full h-screen">
       <div className="fixed inset-0 bg-[url(/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-20" />
@@ -189,9 +204,11 @@ export default function ChatPage() {
         {/* Chat Header */}
         <div className="flex items-center gap-3 p-4 border-b border-[#222222] mt-[64px] md:mt-0 bg-[#111111] sticky top-0 z-10">
           <div className="h-10 w-10 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center">
-            <img
+            <Image
               src={character.imageUrl}
               alt={character.name}
+              width={40}
+              height={40}
               className="h-full w-full object-contain"
             />
           </div>
@@ -216,9 +233,11 @@ export default function ChatPage() {
               >
                 {msg.role === "assistant" && (
                   <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
-                    <img
+                    <Image
                       src={character.imageUrl}
                       alt={character.name}
+                      width={32}
+                      height={32}
                       className="h-full w-full object-contain"
                     />
                   </div>
@@ -232,9 +251,11 @@ export default function ChatPage() {
                   )}
                 >
                   {"isImage" in msg && msg.isImage ? (
-                    <img
+                    <Image
                       src={msg.content}
                       alt={character.name}
+                      width={192}
+                      height={192}
                       className="rounded-md w-48 h-48 object-cover"
                     />
                   ) : (

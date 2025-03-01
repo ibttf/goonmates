@@ -164,9 +164,12 @@ export function Sidebar() {
 
   const handleSignIn = async () => {
     try {
+      setLoading(true)
       await signInWithGoogle()
     } catch (error) {
       console.error("Error signing in:", error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -216,7 +219,7 @@ export function Sidebar() {
       >
         <div
           className={cn(
-            "flex items-center justify-between h-16 w-full",
+            "flex items-center justify-between h-16 w-full z-50",
             isMobileMenuOpen && "px-4"
           )}
         >
@@ -234,7 +237,7 @@ export function Sidebar() {
         </div>
 
         {isMobileMenuOpen && (
-          <div className="flex flex-col flex-1 px-4 py-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)] w-full">
+          <div className="flex flex-col flex-1 px-4 py-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)] w-full relative z-10">
             <div className="space-y-2">
               {userLoading ? (
                 <>
@@ -263,12 +266,12 @@ export function Sidebar() {
               )}
             </div>
 
-            <div className="mt-auto">
+            <div className="mt-auto relative z-10">
               {user && !isSubscribed && (
                 <Button
                   onClick={handleCheckout}
                   disabled={loading}
-                  className="w-full pl-4 py-5 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-sm hover:from-pink-600 hover:to-pink-700 transition-all duration-200 cursor-pointer"
+                  className="w-full pl-4 py-5 rounded-lg bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-sm hover:from-pink-600 hover:to-pink-700 transition-all duration-200 cursor-pointer z-30"
                 >
                   <div className="flex items-center gap-2">
                     <FaHeart className="h-4 w-4" />
@@ -287,6 +290,7 @@ export function Sidebar() {
                   variant="outline"
                   className="w-full h-11 border-[#333333] bg-transparent text-white hover:bg-[#222222] hover:text-white"
                   onClick={handleSignIn}
+                  disabled={loading}
                 >
                   <div className="flex items-center justify-center gap-2 w-full">
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -307,7 +311,7 @@ export function Sidebar() {
                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                       />
                     </svg>
-                    Sign in
+                    {loading ? "Signing in..." : "Sign in"}
                   </div>
                 </Button>
               )}
@@ -338,11 +342,11 @@ export function Sidebar() {
     <aside
       className={cn(
         sidebarVariants.base,
-        "fixed left-0 h-screen max-h-screen overflow-hidden hidden md:flex",
+        "fixed left-0 h-screen max-h-screen overflow-hidden hidden md:flex z-50",
         isExpanded ? sidebarVariants.expanded : sidebarVariants.collapsed
       )}
     >
-      <div className="flex flex-col h-full overflow-y-auto">
+      <div className="flex flex-col h-full overflow-y-auto relative">
         <div className="h-16 flex items-center justify-between px-4 mt-2">
           {isExpanded ? (
             <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text">
@@ -400,7 +404,7 @@ export function Sidebar() {
           )}
         </div>
 
-        <div className="mt-auto px-3 pb-4 flex flex-col gap-4">
+        <div className="mt-auto px-3 pb-4 flex flex-col gap-4 relative z-10">
           {userLoading ? (
             <div
               className={cn(
@@ -458,6 +462,7 @@ export function Sidebar() {
                   variant="outline"
                   className="w-full h-11 border-[#333333] bg-transparent text-white hover:bg-[#222222] hover:text-white"
                   onClick={handleSignIn}
+                  disabled={loading}
                 >
                   {isExpanded ? (
                     <div className="flex items-center justify-center gap-2 w-full">
@@ -479,7 +484,7 @@ export function Sidebar() {
                           d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                         />
                       </svg>
-                      Sign in
+                      {loading ? "Signing in..." : "Sign in"}
                     </div>
                   ) : (
                     <svg className="w-5 h-5" viewBox="0 0 24 24">

@@ -1,8 +1,10 @@
 "use client"
-import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { type ThemeProviderProps } from "next-themes"
-import { createContext, useContext, useEffect, useState } from "react"
 import { useAuth } from "@/lib/hooks/use-auth"
+import {
+  ThemeProvider as NextThemesProvider,
+  type ThemeProviderProps
+} from "next-themes"
+import { createContext, useContext } from "react"
 
 // Create auth context
 const AuthContext = createContext<ReturnType<typeof useAuth> | null>(null)

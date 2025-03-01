@@ -12,12 +12,10 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full">
-      <div className="fixed inset-0 bg-[url(/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-20" />
-
       {/* Main Content Area */}
       <main
         className={cn(
-          "flex-1 p-6 transition-all duration-300",
+          "flex-1 p-6 transition-all duration-300 relative",
           isMobile ? "pt-20" : isExpanded ? "md:ml-[240px]" : "md:ml-[72px]"
         )}
       >

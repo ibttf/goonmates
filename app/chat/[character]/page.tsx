@@ -61,12 +61,44 @@ export default function ChatPage() {
     .flat()
     .find((char) => char.name.toLowerCase() === characterName)
 
+  // Debug logging
+  useEffect(() => {
+    console.log("Debug state:", {
+      customMessages,
+      apiMessages,
+      messages,
+      hasShownIntro,
+      isIntroLoading,
+      character
+    })
+  }, [
+    customMessages,
+    apiMessages,
+    messages,
+    hasShownIntro,
+    isIntroLoading,
+    character
+  ])
+
   // Show intro message if no messages and hasn't shown intro yet
   useEffect(() => {
     let mounted = true
 
     const generateIntro = async () => {
+      console.log("Generating intro:", {
+        mounted,
+        character,
+        messagesLength: messages.length,
+        hasShownIntro
+      })
+
       if (!mounted || !character || messages.length > 0 || hasShownIntro) {
+        console.log("Skipping intro generation due to:", {
+          mounted,
+          hasCharacter: !!character,
+          messagesLength: messages.length,
+          hasShownIntro
+        })
         return
       }
 
@@ -81,6 +113,7 @@ export default function ChatPage() {
       setCustomMessages([loadingMessage])
 
       try {
+        console.log("Fetching intro for:", character.name)
         const response = await fetch("/api/intro", {
           method: "POST",
           headers: {
@@ -97,6 +130,7 @@ export default function ChatPage() {
         }
 
         const data = await response.json()
+        console.log("Received intro data:", data)
 
         if (mounted) {
           const introMessage: Message = {
@@ -114,6 +148,7 @@ export default function ChatPage() {
             isImage: true
           }
 
+          console.log("Setting custom messages:", [introMessage, imageMessage])
           setCustomMessages([introMessage, imageMessage])
         }
       } catch (error) {
@@ -126,6 +161,7 @@ export default function ChatPage() {
             id: "intro",
             createdAt: new Date()
           }
+          console.log("Setting fallback message:", fallbackMessage)
           setCustomMessages([fallbackMessage])
         }
       } finally {
@@ -141,7 +177,7 @@ export default function ChatPage() {
     return () => {
       mounted = false
     }
-  }, [character, hasShownIntro, messages.length])
+  }, [character?.name, character?.series, hasShownIntro]) // Changed dependency array to be more specific
 
   const handleCheckout = async () => {
     try {
@@ -193,8 +229,6 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col w-full h-screen">
-      <div className="fixed inset-0 bg-[url(/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-20" />
-
       <div
         className={cn(
           "flex-1 flex flex-col h-full relative",

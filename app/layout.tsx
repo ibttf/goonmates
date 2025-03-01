@@ -22,9 +22,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           <SidebarProvider>
-            <div className="flex min-h-screen bg-[#111111]">
+            <div className="flex min-h-screen bg-[#111111] relative">
               <Sidebar />
-              <div className="flex-1">{children}</div>
+              <div className="flex-1 relative">{children}</div>
             </div>
             <Toaster />
           </SidebarProvider>

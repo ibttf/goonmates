@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
 
-interface Subscription {
+interface DatabaseUser {
   user_id: string
   status: string
   plan: string
@@ -18,13 +18,14 @@ interface Subscription {
 
 interface AuthState {
   user: User | null
-  subscription: Subscription | null
+  subscription: DatabaseUser | null
   isLoading: {
     auth: boolean
     subscription: boolean
     signIn: boolean
     signOut: boolean
   }
+  error: Error | null
 }
 
 export function useAuth() {
@@ -36,37 +37,41 @@ export function useAuth() {
       subscription: false,
       signIn: false,
       signOut: false
-    }
+    },
+    error: null
   })
 
   // Separate subscription check
-  const checkSubscription = async (userId: string) => {
-    setState((prev) => ({
-      ...prev,
-      isLoading: { ...prev.isLoading, subscription: true }
-    }))
-
+  const checkSubscription = async (
+    userId: string
+  ): Promise<DatabaseUser | null> => {
     try {
-      const { data: subscriptionData, error: subError } = await supabase
+      const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("user_id", userId)
         .single()
 
-      if (subError) {
-        console.log("No subscription found for user")
-        return null
+      if (error) {
+        if (error.code === "PGRST116") {
+          // No data found
+          console.log("No subscription found for user")
+          return null
+        }
+        throw error
       }
 
-      return subscriptionData
+      return data as DatabaseUser
     } catch (error) {
       console.error("Error checking subscription:", error)
-      return null
-    } finally {
       setState((prev) => ({
         ...prev,
-        isLoading: { ...prev.isLoading, subscription: false }
+        error:
+          error instanceof Error
+            ? error
+            : new Error("Unknown error checking subscription")
       }))
+      return null
     }
   }
 
@@ -163,8 +168,11 @@ export function useAuth() {
   }, [])
 
   const signInWithGoogle = async (next?: string) => {
+    if (state.isLoading.signIn) return // Prevent multiple sign-in attempts
+
     setState((prev) => ({
       ...prev,
+      error: null,
       isLoading: { ...prev.isLoading, signIn: true }
     }))
 
@@ -186,18 +194,22 @@ export function useAuth() {
       if (error) throw error
     } catch (error) {
       console.error("Sign in error:", error)
-      throw error
-    } finally {
       setState((prev) => ({
         ...prev,
+        error:
+          error instanceof Error ? error : new Error("Unknown sign in error"),
         isLoading: { ...prev.isLoading, signIn: false }
       }))
+      throw error
     }
   }
 
   const signOut = async () => {
+    if (state.isLoading.signOut) return // Prevent multiple sign-out attempts
+
     setState((prev) => ({
       ...prev,
+      error: null,
       isLoading: { ...prev.isLoading, signOut: true }
     }))
 
@@ -208,6 +220,7 @@ export function useAuth() {
       setState({
         user: null,
         subscription: null,
+        error: null,
         isLoading: {
           auth: false,
           subscription: false,
@@ -219,6 +232,8 @@ export function useAuth() {
       console.error("Sign out error:", error)
       setState((prev) => ({
         ...prev,
+        error:
+          error instanceof Error ? error : new Error("Unknown sign out error"),
         isLoading: { ...prev.isLoading, signOut: false }
       }))
       throw error
@@ -229,6 +244,7 @@ export function useAuth() {
     user: state.user,
     subscription: state.subscription,
     isLoading: state.isLoading,
+    error: state.error,
     isSubscribed: state.subscription?.status === "active",
     signInWithGoogle,
     signOut

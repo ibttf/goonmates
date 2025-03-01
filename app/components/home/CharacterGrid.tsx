@@ -1,27 +1,22 @@
 import Image from "next/image"
 import Link from "next/link"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { SearchBar } from "./SearchBar"
-import { Character, CharactersBySeries, fetchCharactersBySeries } from "@/lib/characters"
+import { Character, CharactersBySeries, CHARACTERS } from "@/lib/characters"
 
 export function CharacterGrid() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [charactersBySeries, setCharactersBySeries] = useState<CharactersBySeries>({})
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function loadCharacters() {
-      try {
-        const data = await fetchCharactersBySeries()
-        setCharactersBySeries(data)
-      } catch (error) {
-        console.error("Error loading characters:", error)
-      } finally {
-        setLoading(false)
+  // Group characters by series
+  const charactersBySeries = useMemo(() => {
+    const grouped: CharactersBySeries = {}
+    CHARACTERS.forEach((character) => {
+      if (!grouped[character.series]) {
+        grouped[character.series] = []
       }
-    }
-    
-    loadCharacters()
+      grouped[character.series].push(character)
+    })
+    return grouped
   }, [])
 
   const filteredCharactersBySeries = useMemo(() => {
@@ -49,14 +44,6 @@ export function CharacterGrid() {
 
     return filtered
   }, [searchQuery, charactersBySeries])
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-pulse text-pink-400">Loading characters...</div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-16">

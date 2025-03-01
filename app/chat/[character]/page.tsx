@@ -1,32 +1,32 @@
 "use client"
 
-import { useParams } from "next/navigation"
-import { useState, useRef, useEffect } from "react"
-import { fetchCharacterByName, Character } from "@/lib/characters"
+import { ChatHeader } from "@/app/components/chat/ChatHeader"
+import { ChatInput } from "@/app/components/chat/ChatInput"
+import { MessageList } from "@/app/components/chat/MessageList"
+import { useIntroMessage } from "@/app/components/chat/useIntroMessage"
 import { useSidebar } from "@/app/components/layout/Sidebar"
+import { SubscriptionDialog } from "@/app/components/ui/subscription-dialog"
+import { useAuthContext } from "@/app/providers"
+import { Character, CHARACTERS } from "@/lib/characters"
 import useChat from "@/lib/hooks/use-chat"
 import useCheckout from "@/lib/hooks/use-checkout"
 import { cn } from "@/lib/utils"
-import { useAuthContext } from "@/app/providers"
-import { SubscriptionDialog } from "@/app/components/ui/subscription-dialog"
-import { ChatHeader } from "@/app/components/chat/ChatHeader"
-import { MessageList } from "@/app/components/chat/MessageList"
-import { ChatInput } from "@/app/components/chat/ChatInput"
-import { useIntroMessage } from "@/app/components/chat/useIntroMessage"
-import { Message } from "@/app/components/chat/MessageItem"
+import { useParams } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
 
 export default function ChatPage() {
   const { isExpanded } = useSidebar()
   const params = useParams()
-  
-  const characterName = (params.character as string).toLowerCase()
+
+  const characterName = decodeURIComponent(
+    (params.character as string).toLowerCase()
+  )
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false)
   const { user, isSubscribed } = useAuthContext()
   const { isCheckoutLoading, checkoutError, handleCheckout } = useCheckout()
   const inputRef = useRef<HTMLInputElement>(null)
   const [character, setCharacter] = useState<Character | null>(null)
-  const [isCharacterLoading, setIsCharacterLoading] = useState(true)
-  
+
   const {
     messages: chatMessages,
     isLoading,
@@ -37,39 +37,52 @@ export default function ChatPage() {
     handleSubmit: originalHandleSubmit
   } = useChat()
 
-
-
-  // Fetch character data
+  // Get character data
   useEffect(() => {
-    async function loadCharacter() {
-      try {
-        setIsCharacterLoading(true)
-        const characterData = await fetchCharacterByName(characterName)
-        setCharacter(characterData)
-      } catch (error) {
-        console.error("Error loading character:", error)
-      } finally {
-        setIsCharacterLoading(false)
-      }
-    }
-    
-    loadCharacter()
+    console.log("Character search:", {
+      characterName,
+      encodedName: params.character,
+      foundCharacter: CHARACTERS.find(
+        (c) =>
+          c.name.toLowerCase().replace(/\s+/g, " ") ===
+          characterName.replace(/\s+/g, " ")
+      )
+    })
+    const foundCharacter = CHARACTERS.find(
+      (c) =>
+        c.name.toLowerCase().replace(/\s+/g, " ") ===
+        characterName.replace(/\s+/g, " ")
+    )
+    setCharacter(foundCharacter || null)
   }, [characterName])
 
   const { filteredMessages, isIntroLoading, resetIntro } = useIntroMessage(
-    character, 
+    character,
     chatMessages.length,
     chatMessages
   )
 
+  console.log("Chat page state:", {
+    character,
+    characterName,
+    isLoading,
+    isIntroLoading,
+    messagesCount: filteredMessages.length,
+    chatMessagesCount: chatMessages.length
+  })
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    await originalHandleSubmit(e, () => {
-      if (!isSubscribed) {
-        setShowSubscriptionDialog(true)
-        return false
-      }
-      return true
-    }, character?.id?.toString())
+    await originalHandleSubmit(
+      e,
+      () => {
+        if (!isSubscribed) {
+          setShowSubscriptionDialog(true)
+          return false
+        }
+        return true
+      },
+      character?.name
+    )
   }
 
   const handleNewChat = () => {
@@ -77,16 +90,40 @@ export default function ChatPage() {
     resetIntro()
   }
 
-  if (isCharacterLoading) {
+  // Show loading state while character is being loaded
+  if (characterName && !character) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-pulse text-pink-400">Loading character...</div>
+      <div className="flex flex-col w-full h-screen">
+        <div
+          className={cn(
+            "flex-1 flex flex-col h-full relative",
+            isExpanded ? "md:ml-[240px]" : "md:ml-[72px]"
+          )}
+        >
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-500"></div>
+          </div>
+        </div>
       </div>
     )
   }
 
+  // Show error state if character not found
   if (!character) {
-    return <div className="flex justify-center items-center h-screen">Character not found</div>
+    return (
+      <div className="flex flex-col w-full h-screen">
+        <div
+          className={cn(
+            "flex-1 flex flex-col h-full relative",
+            isExpanded ? "md:ml-[240px]" : "md:ml-[72px]"
+          )}
+        >
+          <div className="flex justify-center items-center h-full">
+            <div className="text-white">Character not found</div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -97,17 +134,15 @@ export default function ChatPage() {
           isExpanded ? "md:ml-[240px]" : "md:ml-[72px]"
         )}
       >
-        <ChatHeader 
-          character={character} 
-          onNewChat={handleNewChat} 
+        <ChatHeader character={character} onNewChat={handleNewChat} />
+
+        <MessageList
+          messages={filteredMessages}
+          isLoading={isLoading || isIntroLoading}
+          characterImage={character.imageUrl}
         />
 
-        <MessageList 
-          messages={filteredMessages} 
-          isLoading={isLoading || isIntroLoading} 
-        />
-
-        <ChatInput 
+        <ChatInput
           input={input}
           isLoading={isLoading}
           isError={isError}

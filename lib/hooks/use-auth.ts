@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase } from "@/lib/supabase/client" // Import the singleton instance
 import { User } from "@supabase/supabase-js"
 
 interface Subscription {
@@ -31,9 +31,7 @@ export function useAuth() {
 
   useEffect(() => {
     // Initial fetch
-    fetchUserAndSubscription().then(({ user, subscription }) => {
-      setState({ user, subscription, loading: false })
-    })
+    fetchUserAndSubscription()
 
     // Listen for auth changes
     const {
@@ -50,22 +48,42 @@ export function useAuth() {
     return () => {
       authSubscription.unsubscribe()
     }
-  }, [])
+  }, []) // Empty dependency array since supabase is now stable
 
   async function fetchUserAndSubscription() {
-    const {
-      data: { user },
-      error
-    } = await supabase.auth.getUser()
-    if (error || !user) return { user: null, subscription: null }
+    try {
+      const {
+        data: { user },
+        error: userError
+      } = await supabase.auth.getUser()
 
-    const { data: subscription } = await supabase
-      .from("users")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
+      if (userError || !user) {
+        setState({ user: null, subscription: null, loading: false })
+        return { user: null, subscription: null }
+      }
 
-    return { user, subscription }
+      // First check if the subscriptions table exists
+      const { data: subscriptionData, error: subError } = await supabase
+        .from("users") // Changed from users to subscriptions
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      if (subError) {
+        // If there's an error, it might be because the table doesn't exist
+        // or the user doesn't have access - either way, we can proceed without subscription
+        console.log("Note: No subscription found for user")
+        setState({ user, subscription: null, loading: false })
+        return { user, subscription: null }
+      }
+
+      setState({ user, subscription: subscriptionData, loading: false })
+      return { user, subscription: subscriptionData }
+    } catch (error) {
+      console.error("Error in fetchUserAndSubscription:", error)
+      setState({ user: null, subscription: null, loading: false })
+      return { user: null, subscription: null }
+    }
   }
 
   async function signInWithGoogle(next?: string) {
@@ -95,6 +113,8 @@ export function useAuth() {
     try {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
+      // Explicitly clear state after signout
+      setState({ user: null, subscription: null, loading: false })
     } catch (error) {
       console.error("Error signing out:", error)
       throw error

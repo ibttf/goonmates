@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { ArrowRight, Heart, MessageCircle } from "lucide-react"
+import { Heart } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 export function Hero() {
   return (
@@ -28,7 +28,7 @@ export function Hero() {
         <div className="w-2/3 pl-8">
           <Badge
             variant="outline"
-            className="bg-pink-950/50 text-pink-300 border-pink-500/50 mb-3 animate-pulse"
+            className="bg-pink-950/50 text-pink-300 border-pink-500/50 mb-3"
           >
             <Heart className="w-3 h-3 mr-2" />
             Your New Girlfriend
@@ -41,9 +41,14 @@ export function Hero() {
             girlfriend of your dreams.
           </p>
           <div className="flex gap-3">
-            <Button className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 group px-6 py-5 text-sm text-white">
-              <Heart className="w-3 h-3 mr-2 fill-white" />
-              Talk to Nami
+            <Button
+              asChild
+              className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 group px-6 py-5 text-sm text-white"
+            >
+              <Link href="/chat/nami">
+                <Heart className="w-3 h-3 mr-2 fill-white" />
+                Talk to Nami
+              </Link>
             </Button>
           </div>
         </div>

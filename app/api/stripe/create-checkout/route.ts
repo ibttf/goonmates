@@ -87,7 +87,7 @@ export async function POST(req: Request) {
 
     // Create Stripe checkout session
     try {
-      const checkoutSession = await stripe.checkout.sessions.create({
+      const sessionConfig: Stripe.Checkout.SessionCreateParams = {
         customer: customerId,
         client_reference_id: userId,
         mode: "subscription",
@@ -101,9 +101,31 @@ export async function POST(req: Request) {
         ...(couponId
           ? { discounts: [{ coupon: couponId }] }
           : { allow_promotion_codes: true }),
-        success_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/`
-      })
+        success_url: `${
+          process.env.NODE_ENV === "development"
+            ? "http://localhost:3001"
+            : process.env.NEXT_PUBLIC_WEBSITE_URL
+        }/?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${
+          process.env.NODE_ENV === "development"
+            ? "http://localhost:3001"
+            : process.env.NEXT_PUBLIC_WEBSITE_URL
+        }/`
+      }
+
+      // Only add metadata if we're in development and have a webhook secret
+      if (
+        process.env.NODE_ENV === "development" &&
+        process.env.STRIPE_WEBHOOK_SECRET
+      ) {
+        sessionConfig.metadata = {
+          dev_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET
+        }
+      }
+
+      const checkoutSession = await stripe.checkout.sessions.create(
+        sessionConfig
+      )
 
       return NextResponse.json({ url: checkoutSession.url })
     } catch (error) {

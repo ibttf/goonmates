@@ -25,11 +25,17 @@ interface ChatHook {
   conversations: Conversation[];
   currentConversationId: string | null;
   isLoading: boolean;
-  sendMessage: (text: string) => Promise<void>;
+  input: string;
+  isError: boolean;
+  sendMessage: (text: string, characterId?: string | number) => Promise<void>;
   clearMessages: () => void;
   generateImage: (prompt: string) => Promise<void>;
   startNewConversation: () => void;
   loadConversation: (conversationId: string) => Promise<void>;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>, onSubscriptionCheck?: () => boolean, characterId?: string) => Promise<void>;
+  setInput: (input: string) => void;
+  resetError: () => void;
 }
 
 
@@ -46,6 +52,8 @@ export default function useChat(): ChatHook {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [input, setInput] = useState('');
+  const [isError, setIsError] = useState(false);
 
   // Load user's conversations when they log in
   useEffect(() => {
@@ -267,7 +275,7 @@ export default function useChat(): ChatHook {
     }
   }, [user, messages, currentConversationId]);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (text: string, characterId?: string | number) => {
     if (!text.trim()) return;
 
     // Create a new conversation if this is the first message and user is authenticated
@@ -291,6 +299,7 @@ export default function useChat(): ChatHook {
         },
         body: JSON.stringify({
           messages: [...messages, userMessage],
+          characterId: characterId
         }),
       });
 
@@ -391,15 +400,39 @@ export default function useChat(): ChatHook {
     }
   }, [user, startNewConversation]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  };
+
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>, onSubscriptionCheck?: () => boolean, characterId?: string) => {
+    e.preventDefault();
+    if (onSubscriptionCheck && !onSubscriptionCheck()) {
+      setIsError(true);
+      return;
+    }
+    await sendMessage(input, characterId);
+    setInput('');
+  }, [input, sendMessage]);
+
+  const resetError = useCallback(() => {
+    setIsError(false);
+  }, []);
+
   return {
     messages,
     conversations,
     currentConversationId,
     isLoading,
+    input,
+    isError,
     sendMessage,
     clearMessages,
     generateImage,
     startNewConversation,
-    loadConversation
+    loadConversation,
+    handleInputChange,
+    handleSubmit,
+    setInput,
+    resetError
   };
 } 

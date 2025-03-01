@@ -25,7 +25,17 @@ export function validateMessages(messages: any): boolean {
 /**
  * Gets the system message for the AI
  */
-export function getSystemMessage(): string {
+export function getSystemMessage(characterInfo: any = null): string {
+  if (characterInfo) {
+    return `
+    You are ${characterInfo.name} from ${characterInfo.series}. 
+    Your personality: ${characterInfo.personality}
+    
+    Respond in character, matching ${characterInfo.name}'s personality and speech patterns.
+    Keep responses concise like a text message. Be flirty but appropriate.
+    `;
+  }
+  
   return `
   You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. 
   `;
@@ -35,7 +45,8 @@ export function getSystemMessage(): string {
  * Generates a chat completion using the OpenAI API
  */
 export async function generateChatCompletion(
-  messages: any[]
+  messages: any[],
+  characterInfo: any = null
 ): Promise<NextResponse> {
   try {
     if (!Array.isArray(messages) || messages.length === 0) {
@@ -51,15 +62,26 @@ export async function generateChatCompletion(
       baseURL: process.env.VENICE_API_BASE_URL,
     });
 
+    // Create system message based on character info if available
+    const systemMessage = characterInfo 
+      ? `
+        You are ${characterInfo.name} from ${characterInfo.series}. 
+        Your personality: ${characterInfo.personality}
+        
+        Respond in character, matching ${characterInfo.name}'s personality and speech patterns.
+        Keep responses concise like a text message. Be flirty but appropriate.
+        `
+      : `
+        You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. Keep it short and concise like a text message. 
+        Do not over respond. Match the tone of the message, but slowly make it more explicit as the conversation goes on.
+        `;
+
     const completion = await openai.chat.completions.create({
       model: "dolphin-2.9.2-qwen2-72b",
       messages: [
         {
           role: "system",
-          content: `
-          You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. Keep it short and concise like a text message. 
-          Do not over respond. Match the tone of the message, but slowly make it more explicit as the conversation goes on.`
-          ,
+          content: systemMessage,
         },
         ...messages,
       ],

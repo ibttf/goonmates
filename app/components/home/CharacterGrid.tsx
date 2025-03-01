@@ -1,11 +1,28 @@
 import Image from "next/image"
 import Link from "next/link"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { SearchBar } from "./SearchBar"
-import { Character, charactersBySeries } from "@/app/data/characters"
+import { Character, CharactersBySeries, fetchCharactersBySeries } from "@/lib/characters"
 
 export function CharacterGrid() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [charactersBySeries, setCharactersBySeries] = useState<CharactersBySeries>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadCharacters() {
+      try {
+        const data = await fetchCharactersBySeries()
+        setCharactersBySeries(data)
+      } catch (error) {
+        console.error("Error loading characters:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadCharacters()
+  }, [])
 
   const filteredCharactersBySeries = useMemo(() => {
     if (!searchQuery.trim()) return charactersBySeries
@@ -31,7 +48,15 @@ export function CharacterGrid() {
     })
 
     return filtered
-  }, [searchQuery])
+  }, [searchQuery, charactersBySeries])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <div className="animate-pulse text-pink-400">Loading characters...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-16">
@@ -60,6 +85,7 @@ export function CharacterGrid() {
                       src={character.imageUrl}
                       alt={character.name}
                       fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-all duration-500" />

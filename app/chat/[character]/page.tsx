@@ -1,226 +1,89 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import { Avatar, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useState, useEffect } from "react"
+import { useState, useRef } from "react"
 import { Character, charactersBySeries } from "@/app/data/characters"
-import { Send } from "lucide-react"
 import { useSidebar } from "@/app/components/layout/Sidebar"
-import { useChat } from "ai/react"
+import useChat from "@/lib/hooks/use-chat"
+import useCheckout from "@/lib/hooks/use-checkout"
 import { cn } from "@/lib/utils"
 import { useAuthContext } from "@/app/providers"
 import { SubscriptionDialog } from "@/app/components/ui/subscription-dialog"
-import Image from "next/image"
-
-interface Message {
-  role: "user" | "assistant"
-  content: string
-  id?: string
-  createdAt?: Date
-  isImage?: boolean
-}
-
-interface UIMessage extends Message {
-  isImage?: boolean
-}
+import { ChatHeader } from "@/app/components/chat/ChatHeader"
+import { MessageList } from "@/app/components/chat/MessageList"
+import { ChatInput } from "@/app/components/chat/ChatInput"
+import { useIntroMessage } from "@/app/components/chat/useIntroMessage"
+import { Message } from "@/app/components/chat/MessageItem"
 
 export default function ChatPage() {
   const { isExpanded } = useSidebar()
   const params = useParams()
+  
   const characterName = (params.character as string).toLowerCase()
   const [isError, setIsError] = useState(false)
-  const [hasShownIntro, setHasShownIntro] = useState(false)
-  const [customMessages, setCustomMessages] = useState<Message[]>([])
-  const [isIntroLoading, setIsIntroLoading] = useState(false)
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false)
   const { user, isSubscribed } = useAuthContext()
-
+  const { isCheckoutLoading, checkoutError, handleCheckout } = useCheckout()
+  const [input, setInput] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
   const {
-    messages: apiMessages,
-    input,
-    handleInputChange,
-    handleSubmit: handleApiSubmit,
-    isLoading
-  } = useChat({
-    api: "/api/chat",
-    body: {
-      character: characterName
-    },
-    onError: () => {
-      setIsError(true)
-      setTimeout(() => setIsError(false), 3000)
-    }
-  })
+    messages: chatMessages,
+    isLoading,
+    sendMessage,
+    clearMessages,
+    startNewConversation
+  } = useChat()
 
-  const messages = [...customMessages, ...apiMessages]
-
-  // Find the character data
   const character = Object.values(charactersBySeries)
     .flat()
     .find((char) => char.name.toLowerCase() === characterName)
 
-  // Debug logging
-  useEffect(() => {
-    console.log("Debug state:", {
-      customMessages,
-      apiMessages,
-      messages,
-      hasShownIntro,
-      isIntroLoading,
-      character
-    })
-  }, [
-    customMessages,
-    apiMessages,
-    messages,
-    hasShownIntro,
-    isIntroLoading,
-    character
-  ])
+  const { customMessages, isIntroLoading, resetIntro } = useIntroMessage(
+    character, 
+    chatMessages.length
+  )
 
-  // Show intro message if no messages and hasn't shown intro yet
-  useEffect(() => {
-    let mounted = true
-
-    const generateIntro = async () => {
-      console.log("Generating intro:", {
-        mounted,
-        character,
-        messagesLength: messages.length,
-        hasShownIntro
-      })
-
-      if (!mounted || !character || messages.length > 0 || hasShownIntro) {
-        console.log("Skipping intro generation due to:", {
-          mounted,
-          hasCharacter: !!character,
-          messagesLength: messages.length,
-          hasShownIntro
-        })
-        return
-      }
-
-      setIsIntroLoading(true)
-      // Add initial loading message
-      const loadingMessage: Message = {
-        role: "assistant",
-        content: "...",
-        id: "intro-loading",
-        createdAt: new Date()
-      }
-      setCustomMessages([loadingMessage])
-
-      try {
-        console.log("Fetching intro for:", character.name)
-        const response = await fetch("/api/intro", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            character: character.name,
-            series: character.series
-          })
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to generate intro")
-        }
-
-        const data = await response.json()
-        console.log("Received intro data:", data)
-
-        if (mounted) {
-          const introMessage: Message = {
-            role: "assistant",
-            content: data.content,
-            id: "intro",
-            createdAt: new Date()
-          }
-
-          const imageMessage: Message = {
-            role: "assistant",
-            content: character.imageUrl,
-            id: "intro-image",
-            createdAt: new Date(),
-            isImage: true
-          }
-
-          console.log("Setting custom messages:", [introMessage, imageMessage])
-          setCustomMessages([introMessage, imageMessage])
-        }
-      } catch (error) {
-        console.error("Error generating intro:", error)
-        // Fallback to default intro if API fails
-        if (mounted) {
-          const fallbackMessage: Message = {
-            role: "assistant",
-            content: `Hey! I'm ${character.name} from ${character.series}. Let's chat! 😊`,
-            id: "intro",
-            createdAt: new Date()
-          }
-          console.log("Setting fallback message:", fallbackMessage)
-          setCustomMessages([fallbackMessage])
-        }
-      } finally {
-        if (mounted) {
-          setIsIntroLoading(false)
-          setHasShownIntro(true)
-        }
-      }
-    }
-
-    generateIntro()
-
-    return () => {
-      mounted = false
-    }
-  }, [character?.name, character?.series, hasShownIntro]) // Changed dependency array to be more specific
-
-  const handleCheckout = async () => {
-    try {
-      const response = await fetch("/api/stripe/create-checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          allow_promotion_codes: true
-        })
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to create checkout session")
-      }
-
-      const { url } = await response.json()
-      if (url) {
-        window.location.href = url
-      }
-    } catch (error) {
-      console.error("Error:", error)
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to start checkout. Please try again."
-      )
-    }
-  }
+  // Filter out any image messages from the chat messages
+  const messages = [
+    ...customMessages.filter(msg => !msg.isImage), 
+    ...chatMessages.filter(msg => !msg.imageUrl).map(msg => ({
+      ...msg,
+      isImage: false
+    }))
+  ] as Message[]
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (!input.trim()) return
+    
     if (!user) {
-      // Handle not logged in case
       return
     }
+    
     if (!isSubscribed) {
       setShowSubscriptionDialog(true)
       return
     }
-    handleApiSubmit(e)
+    
+    const message = input
+    setInput("")
+    
+    try {
+      await sendMessage(message)
+    } catch (error) {
+      console.error("Error sending message:", error)
+      setIsError(true)
+      setTimeout(() => setIsError(false), 3000)
+    }
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }
+
+  const handleNewChat = () => {
+    clearMessages()
+    resetIntro()
   }
 
   if (!character) {
@@ -235,126 +98,32 @@ export default function ChatPage() {
           isExpanded ? "md:ml-[240px]" : "md:ml-[72px]"
         )}
       >
-        {/* Chat Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-[#222222] mt-[64px] md:mt-0 bg-[#111111] sticky top-0 z-10">
-          <div className="h-10 w-10 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center">
-            <Image
-              src={character.imageUrl}
-              alt={character.name}
-              width={40}
-              height={40}
-              className="h-full w-full object-contain"
-            />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold text-white">
-              {character.name}
-            </h2>
-            <p className="text-sm text-gray-400">{character.series}</p>
-          </div>
-        </div>
+        <ChatHeader 
+          character={character} 
+          onNewChat={handleNewChat} 
+        />
 
-        {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto w-full p-4 space-y-4">
-            {messages.map((msg, index) => (
-              <div
-                key={msg.id || index}
-                className={cn(
-                  "flex gap-3 items-start",
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                {msg.role === "assistant" && (
-                  <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
-                    <Image
-                      src={character.imageUrl}
-                      alt={character.name}
-                      width={32}
-                      height={32}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    "rounded-lg p-3 max-w-[80%] md:max-w-[70%]",
-                    msg.role === "user"
-                      ? "bg-pink-500 text-white"
-                      : "bg-[#222222] text-white"
-                  )}
-                >
-                  {"isImage" in msg && msg.isImage ? (
-                    <Image
-                      src={msg.content}
-                      alt={character.name}
-                      width={192}
-                      height={192}
-                      className="rounded-md w-48 h-48 object-cover"
-                    />
-                  ) : (
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  )}
-                </div>
-                {msg.role === "user" && (
-                  <Avatar className="h-8 w-8 mt-1">
-                    <AvatarImage src="/avatar-placeholder.png" alt="You" />
-                  </Avatar>
-                )}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex gap-3 items-start">
-                <Avatar className="h-8 w-8 mt-1">
-                  <AvatarImage src={character.imageUrl} alt={character.name} />
-                </Avatar>
-                <div className="max-w-[70%] rounded-lg p-3 bg-[#222222] text-white">
-                  <div className="flex gap-1">
-                    <span className="animate-bounce">•</span>
-                    <span className="animate-bounce delay-100">•</span>
-                    <span className="animate-bounce delay-200">•</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <MessageList 
+          messages={messages} 
+          character={character} 
+          isLoading={isLoading || isIntroLoading} 
+        />
 
-        {/* Chat Input */}
-        <div className="border-t border-[#222222] bg-[#111111] p-4">
-          <div className="max-w-3xl mx-auto">
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                value={input}
-                onChange={handleInputChange}
-                placeholder={`Message ${character.name}...`}
-                className={cn(
-                  "flex-1 bg-[#222222] border-none text-white placeholder-gray-400",
-                  isError && "ring-2 ring-red-500"
-                )}
-                disabled={isLoading}
-              />
-              <Button
-                type="submit"
-                className={cn(
-                  "text-white",
-                  isLoading
-                    ? "bg-pink-500/50 cursor-not-allowed"
-                    : "bg-pink-500 hover:bg-pink-600"
-                )}
-                disabled={isLoading}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
-          </div>
-        </div>
+        <ChatInput 
+          input={input}
+          isLoading={isLoading}
+          isError={isError}
+          characterName={character.name}
+          inputRef={inputRef}
+          onInputChange={handleInputChange}
+          onSubmit={handleSubmit}
+        />
       </div>
 
       <SubscriptionDialog
         open={showSubscriptionDialog}
         onOpenChange={setShowSubscriptionDialog}
-        onSubscribe={handleCheckout}
+        onSubscribe={() => handleCheckout({ allowPromotionCodes: true })}
       />
     </div>
   )

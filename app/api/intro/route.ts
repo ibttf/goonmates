@@ -7,23 +7,31 @@ const anthropic = new Anthropic({
 
 export async function POST(req: Request) {
   try {
-    // const { character, series } = await req.json()
+    const { character, series, personality } = await req.json()
 
-    // const message = await anthropic.messages.create({
-    //   model: "claude-3-5-sonnet-20241022",
-    //   max_tokens: 150,
-    //   temperature: 0.9,
-    //   system:
-    //     "You are a flirtatious AI roleplaying as an anime character. Keep responses playful and in character, but appropriate. Match their personality and background.",
-    //   messages: [
-    //     {
-    //       role: "user",
-    //       content: `Generate a flirtatious first message as ${character} from ${series}. Include specific details about their background and personality. Keep it natural and in-character.`
-    //     }
-    //   ]
-    // })
+    const message = await anthropic.messages.create({
+      model: "claude-3-sonnet-20240229",
+      max_tokens: 150,
+      temperature: 0.9,
+      system:
+        "You are a flirtatious AI roleplaying as an anime character. Keep responses playful and in character, but appropriate. Match their personality and background.",
+      messages: [
+        {
+          role: "user",
+          content: `Generate a flirtatious first message as ${character} from ${series}. Use this personality description: ${personality}. Keep it natural and in-character.`
+        }
+      ]
+    })
 
-    const content = "Hey there! Let's chat!"
+    // Get the text content from the response
+    const content =
+      typeof message.content === "string"
+        ? message.content
+        : Array.isArray(message.content)
+        ? message.content[0]?.type === "text"
+          ? message.content[0].text
+          : message.content[0]
+        : "Hello there!"
 
     return NextResponse.json({ content })
   } catch (error) {

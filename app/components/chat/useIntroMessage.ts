@@ -3,54 +3,40 @@ import { Character } from "@/lib/characters"
 import { Message } from "./MessageItem"
 
 interface UseIntroMessageResult {
-  filteredMessages: Message[];
-  customMessages: Message[];
-  isIntroLoading: boolean;
-  resetIntro: () => void;
+  filteredMessages: Message[]
+  isIntroLoading: boolean
+  resetIntro: () => void
 }
 
 export function useIntroMessage(
-  character: Character | null | undefined, 
+  character: Character | null | undefined,
   messagesLength: number,
   chatMessages: Message[] = []
 ): UseIntroMessageResult {
-  const [customMessages, setCustomMessages] = useState<Message[]>([])
+  const [introMessage, setIntroMessage] = useState<Message | null>(null)
+  const [profilePicMessage, setProfilePicMessage] = useState<Message | null>(
+    null
+  )
   const [isIntroLoading, setIsIntroLoading] = useState(false)
-  const [hasShownIntro, setHasShownIntro] = useState(false)
 
   useEffect(() => {
-    let mounted = true
-
     const generateIntro = async () => {
-      console.log("Generating intro:", {
-        mounted,
-        character,
+      console.log("Checking intro generation:", {
+        hasCharacter: !!character,
+        hasIntroMessage: !!introMessage,
         messagesLength,
-        hasShownIntro
+        characterName: character?.name
       })
 
-      if (!mounted || !character || messagesLength > 0 || hasShownIntro) {
-        console.log("Skipping intro generation due to:", {
-          mounted,
-          hasCharacter: !!character,
-          messagesLength,
-          hasShownIntro
-        })
+      // Only skip if we already have an intro or there are existing messages
+      if (!character || introMessage || messagesLength > 0) {
         return
       }
 
       setIsIntroLoading(true)
-      const loadingMessage: Message = {
-        role: "assistant",
-        content: "...",
-        id: "intro-loading",
-        createdAt: new Date()
-      }
-      
-      setCustomMessages([loadingMessage])
+      console.log("Starting intro generation for:", character.name)
 
       try {
-        console.log("Fetching intro for:", character.name)
         const response = await fetch("/api/intro", {
           method: "POST",
           headers: {
@@ -58,7 +44,8 @@ export function useIntroMessage(
           },
           body: JSON.stringify({
             character: character.name,
-            series: character.series
+            series: character.series,
+            personality: character.personality
           })
         })
 
@@ -67,64 +54,86 @@ export function useIntroMessage(
         }
 
         const data = await response.json()
-        console.log("Received intro data:", data)
+        console.log("Intro generation response:", data)
 
-        if (mounted) {
-          const introMessage: Message = {
-            role: "assistant",
-            content: data.content,
-            id: "intro",
-            createdAt: new Date()
-          }
-
-          console.log("Setting custom messages:", [introMessage])
-          setCustomMessages([introMessage])
+        const newIntroMessage: Message = {
+          role: "assistant",
+          content: data.content,
+          id: "intro",
+          createdAt: new Date()
         }
+        setIntroMessage(newIntroMessage)
+
+        // Add profile picture message
+        const profileMessage: Message = {
+          role: "assistant",
+          content: "",
+          id: "profile-pic",
+          createdAt: new Date(),
+          imageUrl: character.imageUrl
+        }
+        setProfilePicMessage(profileMessage)
+        console.log("Set intro and profile messages:", {
+          newIntroMessage,
+          profileMessage
+        })
       } catch (error) {
-        console.error("Error generating intro:", error)
-        if (mounted) {
-          const fallbackMessage: Message = {
-            role: "assistant",
-            content: `Hey! I'm ${character.name} from ${character.series}. Let's chat! 😊`,
-            id: "intro",
-            createdAt: new Date()
-          }
-          console.log("Setting fallback message:", fallbackMessage)
-          setCustomMessages([fallbackMessage])
+        console.error("Error in intro generation:", error)
+        // Fallback to using personality directly if API fails
+        const fallbackMessage: Message = {
+          role: "assistant",
+          content: character.personality,
+          id: "intro",
+          createdAt: new Date()
         }
+        setIntroMessage(fallbackMessage)
+
+        // Still add profile picture message
+        const profileMessage: Message = {
+          role: "assistant",
+          content: "",
+          id: "profile-pic",
+          createdAt: new Date(),
+          imageUrl: character.imageUrl
+        }
+        setProfilePicMessage(profileMessage)
+        console.log("Set fallback and profile messages:", {
+          fallbackMessage,
+          profileMessage
+        })
       } finally {
-        if (mounted) {
-          setIsIntroLoading(false)
-          setHasShownIntro(true)
-        }
+        setIsIntroLoading(false)
+        console.log("Finished intro generation, loading state set to false")
       }
     }
 
     generateIntro()
-
-    return () => {
-      mounted = false
-    }
-  }, [character, hasShownIntro, messagesLength])
+  }, [character, messagesLength, introMessage])
 
   const resetIntro = () => {
-    setCustomMessages([])
-    setHasShownIntro(false)
+    setIntroMessage(null)
+    setProfilePicMessage(null)
   }
 
-  // Filter out any image messages and combine with custom messages
+  // Combine intro message with chat messages
   const filteredMessages = [
-    ...customMessages.filter(msg => !msg.isImage), 
-    ...chatMessages.filter(msg => !msg.imageUrl).map(msg => ({
-      ...msg,
-      isImage: false
-    }))
+    ...(introMessage ? [introMessage] : []),
+    ...(profilePicMessage ? [profilePicMessage] : []),
+    ...chatMessages
   ] as Message[]
+
+  // Log filtered messages
+  console.log("Current messages state:", {
+    hasIntroMessage: !!introMessage,
+    hasProfilePicMessage: !!profilePicMessage,
+    isLoading: isIntroLoading,
+    totalMessages: filteredMessages.length,
+    messages: filteredMessages
+  })
 
   return {
     filteredMessages,
-    customMessages,
     isIntroLoading,
     resetIntro
   }
-} 
+}

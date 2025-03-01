@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { Character } from "@/app/data/characters"
+import { Character } from "@/lib/characters"
 
 interface ChatHeaderProps {
   character: Character
@@ -20,15 +20,13 @@ export function ChatHeader({ character, onNewChat }: ChatHeaderProps) {
         />
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-white">
-          {character.name}
-        </h2>
+        <h2 className="text-lg font-semibold text-white">{character.name}</h2>
         <p className="text-sm text-gray-400">{character.series}</p>
       </div>
       <div className="ml-auto">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onNewChat}
           className="text-xs"
         >
@@ -37,4 +35,4 @@ export function ChatHeader({ character, onNewChat }: ChatHeaderProps) {
       </div>
     </div>
   )
-} 
+}

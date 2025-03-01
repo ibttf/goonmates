@@ -13,9 +13,10 @@ export interface Message {
 
 interface MessageItemProps {
   message: Message
+  characterImage?: string
 }
 
-export function MessageItem({ message }: MessageItemProps) {
+export function MessageItem({ message, characterImage }: MessageItemProps) {
   return (
     <div
       className={cn(
@@ -26,7 +27,7 @@ export function MessageItem({ message }: MessageItemProps) {
       {message.role === "assistant" && (
         <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
           <Image
-            src={message.imageUrl || "/avatar-placeholder.png"}
+            src={characterImage || "/avatar-placeholder.png"}
             alt={message.content}
             width={32}
             height={32}
@@ -43,6 +44,17 @@ export function MessageItem({ message }: MessageItemProps) {
         )}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
+        {message.imageUrl && (
+          <div className="mt-2 rounded-lg overflow-hidden">
+            <Image
+              src={message.imageUrl}
+              alt={message.content}
+              width={400}
+              height={400}
+              className="w-full h-auto"
+            />
+          </div>
+        )}
       </div>
       {message.role === "user" && (
         <Avatar className="h-8 w-8 mt-1">
@@ -51,4 +63,4 @@ export function MessageItem({ message }: MessageItemProps) {
       )}
     </div>
   )
-} 
+}

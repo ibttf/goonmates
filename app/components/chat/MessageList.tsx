@@ -4,24 +4,30 @@ import Image from "next/image"
 interface MessageListProps {
   messages: Message[]
   isLoading: boolean
+  characterImage?: string
 }
 
-export function MessageList({ messages, isLoading }: MessageListProps) {
+export function MessageList({
+  messages,
+  isLoading,
+  characterImage
+}: MessageListProps) {
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto w-full p-4 space-y-4">
         {messages.map((msg, index) => (
-          <MessageItem 
-            key={msg.id || index} 
-            message={msg} 
+          <MessageItem
+            key={msg.id || index}
+            message={msg}
+            characterImage={characterImage}
           />
         ))}
-        
+
         {isLoading && (
           <div className="flex gap-3 items-start">
             <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
               <Image
-                src={"/avatar-placeholder.png"}
+                src={characterImage || "/avatar-placeholder.png"}
                 alt={"Loading..."}
                 width={32}
                 height={32}
@@ -40,4 +46,4 @@ export function MessageList({ messages, isLoading }: MessageListProps) {
       </div>
     </div>
   )
-} 
+}

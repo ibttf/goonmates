@@ -1,0 +1,56 @@
+Chungin Lee - Written Statement
+
+I am submitting this document as a formal statement regarding my recent creation, public demonstration, and distribution of a software tool known as "Interview Coder." This tool is an invisible AI assistant to help users pass their Leetcode interviews. My intention here is to explain what I did, why I did it, and the broader points I hoped to raise about the state of technical interviews within the technology industry.
+
+1. Nature of InterviewCoder
+
+InterviewCoder is an application designed to recognize common algorithmic questions in real-time and provide instant solutions. It leverages the latest models built by . Once a question is detected—often through text parsing or pattern matching—InterviewCoder generates a functional solution in a matter of seconds. This solution can be pasted directly into an online coding platform or integrated development environment (IDE).
+
+I recorded myself publicly using InterviewCoder during a remote technical interview with a major technology company—Amazon. The video captured how quickly automated solutions could be produced in response to questions meant to test problem-solving aptitude. After the interview, an Amazon executive became aware of this demonstration and filed a complaint about my actions.
+
+2. Context and Motivation
+Protest Against the Status Quo: My primary motivation was to protest the continued reliance on LeetCode-style interviews, which I believe to be an overly rigid and time-consuming system. Over the past few years, candidates and industry voices alike have criticized these interviews for disproportionately testing algorithmic “puzzle-solving” rather than practical, real-world engineering skills.
+
+Personal Experience: As someone who has solved over 600 LeetCode problems, participated extensively in the r/leetcode community, and observed the grueling preparation that many candidates undergo, I felt compelled to highlight the inefficiency and disconnect of current interview practices. While I acknowledge the skill-building aspect of problem-solving, the sheer volume of memorization and pattern-recognition required can overshadow true engineering ability.
+
+Ethical Dilemma: I recognize that creating a “cheating” tool runs counter to commonly held principles of integrity—both academically and professionally. However, I viewed this act as a form of civil disobedience aimed at generating discussion and sparking reform within the industry. My decision to make the tool public and demonstrate it in an actual interview scenario was deliberate: a live demonstration can often provoke deeper reflection than hypothetical discourse alone.
+
+3. Actions Taken
+Design and Development: Over several months, I researched and compiled datasets of common coding problems, trained models to recognize problem statements, and implemented a code-generation pipeline.
+Public Disclosure: Rather than keeping InterviewCoder private, I recorded a video of myself using it during a real remote interview. My choice to do so was rooted in the conviction that a public demonstration would highlight the fragility of current interview formats.
+Limited Monetization: I briefly explored monetizing InterviewCoder to cover server costs, API fees, and potential legal expenses. I anticipated potential litigation if companies or individuals decided to take legal action against the platform or its creator. My calculations indicated that widespread commercial profitability was unlikely, given the legal and ethical risks.
+4. A Statement of Responsibility
+I acknowledge that the actions I took—developing and showcasing a cheating tool—violate many established norms. Under typical conditions, these interviews are set up to measure individual skill, and automating solutions conflicts with the principle of a fair assessment. I accept responsibility for my decision to deploy InterviewCoder in a way that undermined the standard interview protocol.
+
+At the same time, I emphasize that my goal was not personal gain. I did not use InterviewCoder for the sake of securing a job under false pretenses. Instead, I intentionally broadcast my usage to amplify the discussion around a flawed system—one that many candidates find deeply frustrating yet are hesitant to challenge due to potential repercussions in job prospects.
+
+5. Systemic Issues with Remote Technical Interviews
+5.1 Over-Reliance on Algorithmic Puzzles
+Preparation Time: Many candidates devote hundreds of hours to memorizing solutions, patterns, and corner cases to pass these interviews. The requirement to master a voluminous catalog of algorithms often overshadows more relevant software skills like debugging, code organization, collaboration, and long-term project maintenance.
+Disconnection from Real Work: These questions are often repeated across companies and recycled in multiple interview loops. As a result, passing an algorithmic screen can become less about understanding and more about pattern recognition.
+5.2 Cheating & AI
+High Rates of AI Use: Anecdotal evidence on platforms such as Blind and private Slack or Discord communities suggests that over 50% of interviewees (in some contexts) may already be using AI or other resources during online interviews. This is hard to confirm with rigorous data, but the sheer volume of stories points to a systemic issue.
+Ignored by Companies: While some recruiters and executives privately acknowledge the prevalence of cheating, large-scale action to revamp the system remains absent. Most companies seem reluctant to abandon a screening method that is easy to administer and score, despite the undermining effect of automated tools.
+5.3 Financial and Logistical Complexity
+On-Site Interviews: Some have suggested returning to all on-site interviews as a solution to AI-based cheating. This measure, however, comes at a substantial cost. Many large tech firms spend millions of dollars annually on flights, hotels, and stipends for candidates (TechCrunch, 2021). Scaling on-site visits for all roles can be prohibitively expensive.
+Alternative Platforms: Solutions like Karat and Triplebyte—and newer methods like real-time pair programming—have aimed to bridge the gap between algorithmic puzzle-solving and practical skills (Forbes, 2019). Despite these options, the mainstream approach has not meaningfully shifted.
+6. Objectives & Desired Outcomes
+Stimulating Dialogue: By making InterviewCoder publicly visible, I hoped to force a conversation about the viability and fairness of LeetCode-style interviews. If demonstration of an automated solution can pass multiple rounds at top companies, then the system is clearly vulnerable to manipulation.
+Encouraging Reform: I envision an industry-wide transition to interviews that replicate real-world tasks more faithfully. For instance, analyzing a candidate’s open-source contributions, code reviews, or problem-solving in an unbounded environment would offer a more authentic measure of competence.
+Reducing Stress & Inefficiency: If companies embrace more holistic evaluation approaches, the burden of grinding hundreds of algorithmic puzzles could ease, improving candidates’ mental health and expanding the talent pool to include those with strong engineering aptitude but less interest in memorizing data structure tricks.
+7. Reflections on the Demonstration
+I do not dispute that my actions showcased a violation of testing norms. It was, in essence, an orchestrated event designed to expose a weakness in the system rather than demonstrate my own competence through dishonest means. My personal achievements in solving over 600 LeetCode problems—and my consistent engagement in related communities—already stand as evidence that I am familiar with and capable of succeeding under conventional methods.
+
+The reason I used this approach was to highlight that the barrier to cheating is not particularly high. Anyone with moderate technical expertise and access to AI models can script a cheat solution—rendering the technical interview’s integrity questionable at best. To that end, I hope my demonstration serves as a wake-up call rather than a mere display of misconduct.
+
+8. Moving Forward
+Should there be disciplinary or legal implications, I am willing to cooperate fully with any investigations or proceedings. I recognize the academic and professional standards I have called into question. However, I ask that the bigger picture be weighed in any final assessment: The status quo has persisted largely uncontested for nearly two decades, and it is time to scrutinize whether these interviews are genuinely fulfilling their intended purpose.
+
+I also welcome conversations with universities, including Columbia, regarding the moral and educational aspects of this issue. If there are pathways to reform—such as research into new interview techniques, pilot studies with industry partners, or collaborative projects aimed at designing fairer, more representative evaluations—I am eager to participate. My technical background, combined with my insight into the pitfalls of current processes, could contribute positively to developing better standards.
+
+9. Conclusion
+In summary, I built and demonstrated InterviewCoder to spotlight systemic flaws in remote technical interviews, not to fraudulently secure employment. While I accept responsibility for the consequences of exposing these vulnerabilities in a dramatic fashion, I stand by the principle that challenging broken systems is necessary for progress. Large-scale transformations seldom arise from polite suggestions alone; sometimes a disruptive example can be the catalyst for overdue change.
+
+I hope this written statement clarifies the impetus behind InterviewCoder, the scope of my actions, and my ultimate goals in bringing attention to the widespread discontent with LeetCode-style interviews. Moving forward, I remain committed to fostering open dialogue and contributing to solutions that enrich the hiring process for candidates and companies alike.
+
+

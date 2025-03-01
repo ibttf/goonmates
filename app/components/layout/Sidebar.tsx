@@ -292,13 +292,13 @@ export function Sidebar() {
                         setIsMobileMenuOpen(false)
                       }}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
                         <div className="w-8 h-8 rounded-full bg-[#222222] flex items-center justify-center">
                           <User className="w-5 h-5 text-gray-400" />
                         </div>
                         <span className="text-sm truncate">{user.email}</span>
                       </div>
-                      <ChevronRightIcon className="h-4 w-4 ml-2" />
+                      <ChevronRightIcon className="h-4 w-4" />
                     </Button>
                   )}
 

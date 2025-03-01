@@ -143,33 +143,27 @@ export function Sidebar({
         </div>
 
         {/* Bottom Links */}
-        <div className="mt-auto px-2 pb-4 space-y-4">
-          <div>
-            <SidebarButton
-              icon={FaHeadset}
-              label="Contact Support"
-              href="/support"
-              expanded={true}
-              size="lg"
-              className="mb-1"
-            />
+        <div className="mt-auto px-4 pb-4 space-y-4">
+          {/* Privacy and Terms Links */}
+          <div className="text-[11px] text-gray-400 text-center">
+            <Link href="/privacy" className="hover:text-white">
+              Privacy Policy
+            </Link>
+            <span className="mx-1">•</span>
+            <Link href="/terms" className="hover:text-white">
+              Terms of Service
+            </Link>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <SidebarButton
-              icon={FaFileAlt}
-              label="Terms"
-              href="/terms"
-              expanded={true}
-              size="sm"
-            />
-            <SidebarButton
-              icon={FaShieldAlt}
-              label="Privacy"
-              href="/privacy"
-              expanded={true}
-              size="sm"
-            />
-          </div>
+
+          {/* Upgrade Button */}
+          <Link href="/premium" className="block">
+            <Button
+              variant="outline"
+              className="w-full border-pink-500 text-pink-500 hover:bg-pink-500/10"
+            >
+              Upgrade to Goonmates+
+            </Button>
+          </Link>
         </div>
       </aside>
     </TooltipProvider>

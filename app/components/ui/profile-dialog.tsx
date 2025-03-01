@@ -86,8 +86,7 @@ export function ProfileDialog({
             <Button
               onClick={handleCancelSubscription}
               disabled={loading}
-              variant="outline"
-              className="w-full border-[#333333] hover:bg-[#222222]"
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
             >
               {loading ? "Processing..." : "Cancel Subscription"}
             </Button>
@@ -96,7 +95,7 @@ export function ProfileDialog({
           <Button
             onClick={onSignOut}
             variant="outline"
-            className="w-full border-[#333333] hover:bg-[#222222]"
+            className="w-full border-red-600 text-red-600 hover:bg-red-600/10"
           >
             Sign Out
           </Button>

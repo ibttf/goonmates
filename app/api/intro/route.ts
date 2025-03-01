@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const { character, series } = await req.json()
 
     const message = await anthropic.messages.create({
-      model: "claude-3-opus-20240229",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 150,
       temperature: 0.9,
       system:

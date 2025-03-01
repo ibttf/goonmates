@@ -101,16 +101,8 @@ export async function POST(req: Request) {
         ...(couponId
           ? { discounts: [{ coupon: couponId }] }
           : { allow_promotion_codes: true }),
-        success_url: `${
-          process.env.NODE_ENV === "development"
-            ? "http://localhost:3001"
-            : process.env.NEXT_PUBLIC_WEBSITE_URL
-        }/?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${
-          process.env.NODE_ENV === "development"
-            ? "http://localhost:3001"
-            : process.env.NEXT_PUBLIC_WEBSITE_URL
-        }/`
+        success_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/`
       }
 
       // Only add metadata if we're in development and have a webhook secret

@@ -44,16 +44,8 @@ export async function POST(req: Request) {
       mode: "setup",
       payment_method_types: ["card"],
       customer: customerId,
-      success_url: `${
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:3001"
-          : process.env.NEXT_PUBLIC_WEBSITE_URL
-      }/?setup_success=true`,
-      cancel_url: `${
-        process.env.NODE_ENV === "development"
-          ? "http://localhost:3001"
-          : process.env.NEXT_PUBLIC_WEBSITE_URL
-      }/?setup_canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/?setup_success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_WEBSITE_URL}/?setup_canceled=true`,
       metadata: {
         user_id: userId
       },

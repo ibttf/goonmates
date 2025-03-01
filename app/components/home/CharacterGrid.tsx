@@ -47,7 +47,7 @@ export function CharacterGrid() {
                 </span>
               )}
             </h2>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
               {characters.map((character) => (
                 <Link
                   href={`/chat/${character.name.toLowerCase()}`}

@@ -6,7 +6,7 @@ import Link from "next/link"
 
 export function Hero() {
   return (
-    <div className="relative mb-8 h-[30vh] min-h-[320px] overflow-hidden rounded-xl bg-[#1a0612]">
+    <div className="relative mb-8 h-fit max-h-[30vw] overflow-hidden rounded-xl bg-[#1a0612]">
       <div className="absolute inset-0 bg-gradient-to-r from-pink-600/10 to-purple-600/10" />
       <div
         className="absolute inset-0"

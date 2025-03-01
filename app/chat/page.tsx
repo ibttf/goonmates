@@ -4,19 +4,9 @@ import { MessageSquare } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
-import { Character } from "@/app/data/characters"
 import { MessageItem, Message } from "@/app/components/chat/MessageItem"
 import { useSidebar } from "@/app/components/layout/Sidebar"
 
-// Default character for displaying messages
-const defaultCharacter: Character = {
-  name: "Character",
-  age: 25,
-  description: "AI Character",
-  personality: "Helpful and friendly AI assistant",
-  imageUrl: "/avatar-placeholder.png",
-  series: "default"
-}
 
 export default function ChatPage() {
   const { isExpanded } = useSidebar()
@@ -182,7 +172,6 @@ export default function ChatPage() {
                     <MessageItem 
                       key={msg.id || index} 
                       message={msg} 
-                      character={defaultCharacter} 
                     />
                   ))}
                 </div>

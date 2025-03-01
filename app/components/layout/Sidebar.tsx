@@ -7,14 +7,20 @@ import {
   TooltipTrigger
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight, Menu } from "lucide-react"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  ChevronRightIcon,
+  User
+} from "lucide-react"
 import { createContext, useContext, useEffect, useState } from "react"
 import { FaCommentAlt, FaCompass, FaHeart } from "react-icons/fa"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuthContext } from "@/app/providers"
 import { useIsMobile } from "@/lib/hooks/use-mobile"
-
+import { ProfileDialog } from "../ui/profile-dialog"
 // Sidebar Context
 const SidebarContext = createContext<{
   isExpanded: boolean
@@ -138,12 +144,14 @@ export function Sidebar() {
     user,
     loading: userLoading,
     isSubscribed,
-    signInWithGoogle
+    signInWithGoogle,
+    signOut
   } = useAuthContext()
   const pathname = usePathname()
   const [loading, setLoading] = useState(false)
   const isMobile = useIsMobile()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   // Debug logging
   useEffect(() => {
@@ -166,12 +174,41 @@ export function Sidebar() {
     try {
       setLoading(true)
       await signInWithGoogle()
+      // Loading will be reset by the useEffect when user changes
     } catch (error) {
       console.error("Error signing in:", error)
-    } finally {
+      alert("Failed to sign in. Please try again.")
       setLoading(false)
     }
   }
+
+  // Add timeout to reset loading state if stuck
+  useEffect(() => {
+    if (loading) {
+      const timeout = setTimeout(() => {
+        setLoading(false)
+      }, 10000) // Reset loading after 10 seconds
+      return () => clearTimeout(timeout)
+    }
+  }, [loading])
+
+  // Reset local loading state when auth state changes
+  useEffect(() => {
+    if (!userLoading) {
+      // Only reset when userLoading is false
+      setLoading(false)
+    }
+  }, [user, userLoading])
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Auth state:", {
+      user,
+      isSubscribed,
+      loading: userLoading,
+      signInLoading: loading
+    })
+  }, [user, isSubscribed, userLoading, loading])
 
   const handleCheckout = async () => {
     try {
@@ -246,6 +283,25 @@ export function Sidebar() {
                 </>
               ) : (
                 <>
+                  {user && (
+                    <Button
+                      variant="ghost"
+                      className="w-full h-14 bg-transparent text-white hover:bg-[#222222] hover:text-white flex items-center justify-between mb-4"
+                      onClick={() => {
+                        setIsProfileOpen(true)
+                        setIsMobileMenuOpen(false)
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#222222] flex items-center justify-center">
+                          <User className="w-5 h-5 text-gray-400" />
+                        </div>
+                        <span className="text-sm truncate">{user.email}</span>
+                      </div>
+                      <ChevronRightIcon className="h-4 w-4 ml-2" />
+                    </Button>
+                  )}
+
                   <NavItem
                     icon={FaCompass}
                     label="Explore Models"
@@ -507,6 +563,59 @@ export function Sidebar() {
                     </svg>
                   )}
                 </Button>
+              )}
+
+              {user && (
+                <>
+                  <Button
+                    variant="ghost"
+                    className="w-full h-11 bg-transparent text-white hover:bg-[#222222] hover:text-white flex items-center justify-between"
+                    onClick={() => setIsProfileOpen(true)}
+                  >
+                    {isExpanded ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-[#222222] flex items-center justify-center">
+                            <User className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <span className="text-sm truncate">{user.email}</span>
+                        </div>
+                        <ChevronRightIcon className="h-4 w-4 ml-2" />
+                      </>
+                    ) : (
+                      <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center">
+                              <div className="w-6 h-6 rounded-full bg-[#222222] flex items-center justify-center">
+                                <User className="w-4 h-4 text-gray-400" />
+                              </div>
+                              <ChevronRightIcon className="h-4 w-4 ml-1" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="right"
+                            sideOffset={10}
+                            className="select-none bg-black text-white border-[#333333]"
+                          >
+                            Profile Settings
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </Button>
+
+                  {user.email && (
+                    <ProfileDialog
+                      open={isProfileOpen}
+                      onOpenChange={setIsProfileOpen}
+                      onSignOut={signOut}
+                      onSubscribe={handleCheckout}
+                      isSubscribed={isSubscribed}
+                      email={user.email}
+                    />
+                  )}
+                </>
               )}
             </>
           )}

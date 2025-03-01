@@ -21,10 +21,11 @@ export function Hero() {
         style={{
           background:
             "radial-gradient(circle at bottom right, rgba(255, 0, 128, 0.3), transparent 70%), radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.2), transparent 60%)",
-          filter: "blur(40px)"
+          filter: "blur(40px)",
+          zIndex: 1
         }}
       />
-      <div className="flex h-full flex-row items-center">
+      <div className="flex h-full flex-row items-center relative z-10">
         <div className="w-2/3 pl-8">
           <Badge
             variant="outline"
@@ -37,8 +38,9 @@ export function Hero() {
             Nami's Been Waiting For You
           </h1>
           <p className="text-pink-100/70 mb-4 text-sm">
-            Discover an intimate connection with Nami, your personal AI
-            girlfriend of your dreams.
+            Start a romantic relationship with Nami from One Piece, your new AI
+            girlfriend. Experience what it's like to date the busty navigator of
+            the Straw Hat Pirates.
           </p>
           <div className="flex gap-3">
             <Link

@@ -30,25 +30,73 @@ export function useAuth() {
   })
 
   useEffect(() => {
-    // Initial fetch
-    fetchUserAndSubscription()
+    let mounted = true
+
+    // Initial auth check
+    async function checkInitialAuth() {
+      try {
+        const {
+          data: { session }
+        } = await supabase.auth.getSession()
+
+        if (!mounted) return
+
+        if (session) {
+          const { user, subscription } = await fetchUserAndSubscription()
+          if (mounted) {
+            setState({ user, subscription, loading: false })
+          }
+        } else {
+          if (mounted) {
+            setState({ user: null, subscription: null, loading: false })
+          }
+        }
+      } catch (error) {
+        console.error("Error checking initial auth:", error)
+        if (mounted) {
+          setState({ user: null, subscription: null, loading: false })
+        }
+      }
+    }
+
+    // Run initial auth check
+    checkInitialAuth()
 
     // Listen for auth changes
     const {
       data: { subscription: authSubscription }
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session) {
-        const { user, subscription } = await fetchUserAndSubscription()
-        setState({ user, subscription, loading: false })
-      } else {
-        setState({ user: null, subscription: null, loading: false })
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+
+      // Don't set loading to true for initial session check
+      if (event !== "INITIAL_SESSION") {
+        setState((prev) => ({ ...prev, loading: true }))
+      }
+
+      try {
+        if (session) {
+          const { user, subscription } = await fetchUserAndSubscription()
+          if (mounted) {
+            setState({ user, subscription, loading: false })
+          }
+        } else {
+          if (mounted) {
+            setState({ user: null, subscription: null, loading: false })
+          }
+        }
+      } catch (error) {
+        console.error("Error handling auth state change:", error)
+        if (mounted) {
+          setState({ user: null, subscription: null, loading: false })
+        }
       }
     })
 
     return () => {
+      mounted = false
       authSubscription.unsubscribe()
     }
-  }, []) // Empty dependency array since supabase is now stable
+  }, [])
 
   async function fetchUserAndSubscription() {
     try {
@@ -57,31 +105,27 @@ export function useAuth() {
         error: userError
       } = await supabase.auth.getUser()
 
-      if (userError || !user) {
-        setState({ user: null, subscription: null, loading: false })
+      if (userError) throw userError
+
+      if (!user) {
         return { user: null, subscription: null }
       }
 
       // First check if the subscriptions table exists
       const { data: subscriptionData, error: subError } = await supabase
-        .from("users") // Changed from users to subscriptions
+        .from("users")
         .select("*")
         .eq("user_id", user.id)
         .single()
 
       if (subError) {
-        // If there's an error, it might be because the table doesn't exist
-        // or the user doesn't have access - either way, we can proceed without subscription
         console.log("Note: No subscription found for user")
-        setState({ user, subscription: null, loading: false })
         return { user, subscription: null }
       }
 
-      setState({ user, subscription: subscriptionData, loading: false })
       return { user, subscription: subscriptionData }
     } catch (error) {
       console.error("Error in fetchUserAndSubscription:", error)
-      setState({ user: null, subscription: null, loading: false })
       return { user: null, subscription: null }
     }
   }

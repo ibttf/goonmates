@@ -2,6 +2,9 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+// List of paths that require authentication
+const protectedPaths = ["/settings", "/profile"]
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -35,7 +38,36 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getSession()
+  // Refresh session if needed
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession()
+
+  if (error) {
+    console.error("Error refreshing auth session:", error)
+  }
+
+  // If session exists, try to refresh it
+  if (session) {
+    const { error: refreshError } = await supabase.auth.refreshSession()
+    if (refreshError) {
+      console.error("Error refreshing token:", refreshError)
+    }
+  }
+
+  // Check if the request is for a protected path
+  const requestUrl = new URL(request.url)
+  const isProtectedPath = protectedPaths.some((path) =>
+    requestUrl.pathname.startsWith(path)
+  )
+
+  // If it's a protected path and there's no session, redirect to login
+  if (isProtectedPath && !session) {
+    const redirectUrl = new URL("/", request.url)
+    redirectUrl.searchParams.set("next", requestUrl.pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
 
   return response
 }

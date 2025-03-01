@@ -12,7 +12,7 @@ import { createContext, useContext, useEffect, useState } from "react"
 import { FaCommentAlt, FaCompass, FaHeart } from "react-icons/fa"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useAuth } from "@/lib/hooks/use-auth"
+import { useAuthContext } from "@/app/providers"
 import { useIsMobile } from "@/lib/hooks/use-mobile"
 
 // Sidebar Context
@@ -51,12 +51,13 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 }
 
 const sidebarVariants = {
-  base: "flex flex-col bg-[#111111] transition-all duration-300",
+  base: "flex flex-col bg-[#111111] transition-all duration-300 overflow-hidden",
   collapsed: "w-[72px] border-r border-[#222222]",
   expanded: "w-[240px] border-r border-[#222222]",
   mobile:
-    "fixed top-0 left-0 w-screen h-16 border-b border-[#222222] px-4 z-50 overflow-x-hidden",
-  mobileExpanded: "fixed inset-0 z-50 bg-[#111111] w-screen overflow-x-hidden"
+    "fixed top-0 left-0 w-screen h-16 border-b border-[#222222] px-4 z-50",
+  mobileExpanded:
+    "fixed inset-0 z-50 bg-[#111111] w-screen h-screen overflow-hidden"
 }
 
 function NavItem({
@@ -138,7 +139,7 @@ export function Sidebar() {
     loading: userLoading,
     isSubscribed,
     signInWithGoogle
-  } = useAuth()
+  } = useAuthContext()
   const pathname = usePathname()
   const [loading, setLoading] = useState(false)
   const isMobile = useIsMobile()
@@ -233,7 +234,7 @@ export function Sidebar() {
         </div>
 
         {isMobileMenuOpen && (
-          <div className="flex flex-col flex-1 px-4 py-6 space-y-6 overflow-y-auto w-full">
+          <div className="flex flex-col flex-1 px-4 py-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)] w-full">
             <div className="space-y-2">
               {userLoading ? (
                 <>
@@ -337,11 +338,11 @@ export function Sidebar() {
     <aside
       className={cn(
         sidebarVariants.base,
-        "fixed left-0 h-[calc(100vh)] hidden md:flex",
+        "fixed left-0 h-screen max-h-screen overflow-hidden hidden md:flex",
         isExpanded ? sidebarVariants.expanded : sidebarVariants.collapsed
       )}
     >
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full overflow-y-auto">
         <div className="h-16 flex items-center justify-between px-4 mt-2">
           {isExpanded ? (
             <span className="text-xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 text-transparent bg-clip-text">

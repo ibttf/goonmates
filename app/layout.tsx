@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Providers } from "./providers"
-import { SidebarProvider } from "./components/layout/Sidebar"
+import { SidebarProvider, Sidebar } from "@/app/components/layout/Sidebar"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,7 +21,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <Providers>
-          <SidebarProvider>{children}</SidebarProvider>
+          <SidebarProvider>
+            <div className="flex min-h-screen bg-[#111111]">
+              <Sidebar />
+              <div className="flex-1">{children}</div>
+            </div>
+            <Toaster />
+          </SidebarProvider>
         </Providers>
       </body>
     </html>

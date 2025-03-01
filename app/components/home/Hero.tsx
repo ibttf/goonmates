@@ -6,7 +6,7 @@ import Link from "next/link"
 
 export function Hero() {
   return (
-    <div className="relative mb-8 h-[30vh] min-h-[400px] overflow-hidden rounded-xl bg-[#1a0612]">
+    <div className="relative mb-8 h-[30vh] min-h-[350px] overflow-hidden rounded-xl bg-[#1a0612]">
       <div className="absolute inset-0 bg-gradient-to-r from-pink-600/10 to-purple-600/10" />
       <div
         className="absolute inset-0"
@@ -41,15 +41,15 @@ export function Hero() {
             girlfriend of your dreams.
           </p>
           <div className="flex gap-3">
-            <Button
-              asChild
-              className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 group px-6 py-5 text-sm text-white"
+            <Link
+              href="/chat/nami"
+              className="cursor-pointer transition-transform hover:scale-105"
             >
-              <Link href="/chat/nami">
+              <Button className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 group px-6 py-5 text-sm text-white">
                 <Heart className="w-3 h-3 mr-2 fill-white" />
                 Talk to Nami
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </div>
         </div>
         <div className="w-1/2 relative h-full">

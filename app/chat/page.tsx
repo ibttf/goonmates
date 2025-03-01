@@ -6,9 +6,11 @@ import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { Character } from "@/app/data/characters"
 import { MessageItem, Message } from "@/app/components/chat/MessageItem"
+import { useSidebar } from "@/app/components/layout/Sidebar"
 
 // Default character for displaying messages
 const defaultCharacter: Character = {
+  id: "default",
   name: "Character",
   age: 25,
   description: "AI Character",
@@ -18,6 +20,7 @@ const defaultCharacter: Character = {
 }
 
 export default function ChatPage() {
+  const { isExpanded } = useSidebar()
   const searchParams = useSearchParams()
   const conversationId = searchParams.get("id")
   const [messages, setMessages] = useState<Message[]>([])
@@ -134,53 +137,66 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col p-4 md:p-8">
-      <h2 className="text-xl font-bold text-white mb-4">Your Conversations</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {conversations.map((conversation) => (
-          <a 
-            key={conversation.id}
-            href={`/chat?id=${conversation.id}`}
-            className={`p-4 rounded-lg bg-[#222222] hover:bg-[#333333] transition-colors ${
-              conversationId === conversation.id ? 'ring-2 ring-pink-500' : ''
-            }`}
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-full bg-[#333333] flex items-center justify-center">
-                <MessageSquare className="h-5 w-5 text-gray-400" />
-              </div>
-              <div>
-                <h3 className="font-medium text-white truncate">
-                  {conversation.title || 'Untitled Conversation'}
-                </h3>
-                <p className="text-xs text-gray-400">
-                  {new Date(conversation.last_message_at).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </a>
-        ))}
-      </div>
-      
-      {conversationId && messages.length > 0 && (
-        <>
-          <h3 className="text-lg font-medium text-white mb-4">
-            {conversations.find(c => c.id === conversationId)?.title || 'Conversation'}
-          </h3>
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-3xl mx-auto w-full space-y-4">
-              {messages.map((msg, index) => (
-                <MessageItem 
-                  key={msg.id || index} 
-                  message={msg} 
-                  character={defaultCharacter} 
-                />
-              ))}
-            </div>
+    <div className={`flex flex-col w-full h-full transition-all duration-300`}>
+      {/* Scrollable container with fixed height calculation */}
+      <div className="h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="p-4 md:p-6 pb-24">
+          <h2 className="text-xl font-bold text-white mb-6 mt-2">Your Conversations</h2>
+          
+          {/* Conversations grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            {conversations.map((conversation) => (
+              <a 
+                key={conversation.id}
+                href={`/chat?id=${conversation.id}`}
+                className={`p-4 rounded-lg bg-[#222222] hover:bg-[#333333] transition-colors ${
+                  conversationId === conversation.id ? 'ring-2 ring-pink-500' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 flex-shrink-0 rounded-full bg-[#333333] flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-white truncate">
+                      {conversation.title || 'Untitled Conversation'}
+                    </h3>
+                    <p className="text-xs text-gray-400 truncate">
+                      {new Date(conversation.last_message_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </a>
+            ))}
           </div>
-        </>
-      )}
+          
+          {/* Selected conversation messages */}
+          {conversationId && (
+            <div className="mt-8 border-t border-gray-800 pt-6">
+              <h3 className="text-lg font-medium text-white mb-4">
+                {conversations.find(c => c.id === conversationId)?.title || 'Conversation'}
+              </h3>
+              
+              {messages.length > 0 ? (
+                <div className="space-y-4">
+                  {messages.map((msg, index) => (
+                    <MessageItem 
+                      key={msg.id || index} 
+                      message={msg} 
+                      character={defaultCharacter} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 text-gray-500 mx-auto mb-3" />
+                  <p className="text-gray-400">No messages in this conversation yet</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

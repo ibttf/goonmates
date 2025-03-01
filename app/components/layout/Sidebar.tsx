@@ -142,7 +142,7 @@ export function Sidebar() {
   const { isExpanded, setIsExpanded } = useSidebar()
   const {
     user,
-    loading: userLoading,
+    isLoading: { auth: userLoading },
     isSubscribed,
     signInWithGoogle,
     signOut
@@ -401,7 +401,7 @@ export function Sidebar() {
     <aside
       className={cn(
         sidebarVariants.base,
-        "fixed left-0 h-screen max-h-screen overflow-hidden hidden md:flex z-50",
+        "fixed left-0 h-screen max-h-screen overflow-hidden hidden md:flex z-40",
         isExpanded ? sidebarVariants.expanded : sidebarVariants.collapsed
       )}
     >

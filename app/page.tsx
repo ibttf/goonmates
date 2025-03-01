@@ -3,6 +3,7 @@
 import { Hero } from "./components/home/Hero"
 import { Navbar } from "./components/layout/Navbar"
 import { Sidebar } from "./components/layout/Sidebar"
+import { CharacterGrid } from "./components/home/CharacterGrid"
 
 export default function Home() {
   return (
@@ -17,8 +18,9 @@ export default function Home() {
         <Sidebar />
 
         {/* Main Content Area */}
-        <main className="flex-1 p-6 mt-16">
+        <main className="flex-1 p-6 mt-16 md:ml-56">
           <Hero />
+          <CharacterGrid />
         </main>
       </div>
     </div>

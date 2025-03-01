@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { FaVenus, FaMars } from "react-icons/fa"
-import { PiTelevisionSimpleBold } from "react-icons/pi"
 
 interface NavbarProps {
   isSignedIn?: boolean
@@ -9,7 +7,7 @@ interface NavbarProps {
 
 export function Navbar({ isSignedIn = false }: NavbarProps) {
   return (
-    <nav className="fixed top-0 left-0 right-0 h-16 bg-[#111111] border-b border-[#222222] z-50">
+    <nav className="fixed top-0 left-0 right-0 h-16 bg-[#111111] border-b border-[#222222] z-50 mt-2">
       <div className="flex items-center justify-between h-full px-4">
         {/* Left section with menu button and logo */}
         <div className="flex items-center gap-4">

@@ -110,7 +110,7 @@ export function Sidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          "bg-[#111111] border-r border-[#222222] hidden md:flex flex-col h-[calc(100vh-64px)] mt-16 w-56",
+          "fixed left-0 bg-[#111111] border-r border-[#222222] hidden md:flex flex-col h-[calc(100vh-64px)] mt-16 w-56",
           className
         )}
       >

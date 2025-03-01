@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase/client" // Import the singleton instance
+import { supabase } from "@/lib/supabase/client"
 import { User } from "@supabase/supabase-js"
 
 interface Subscription {
@@ -19,76 +19,140 @@ interface Subscription {
 interface AuthState {
   user: User | null
   subscription: Subscription | null
-  loading: boolean
+  isLoading: {
+    auth: boolean
+    subscription: boolean
+    signIn: boolean
+    signOut: boolean
+  }
 }
 
 export function useAuth() {
   const [state, setState] = useState<AuthState>({
     user: null,
     subscription: null,
-    loading: true
+    isLoading: {
+      auth: true, // Initial auth check
+      subscription: false,
+      signIn: false,
+      signOut: false
+    }
   })
+
+  // Separate subscription check
+  const checkSubscription = async (userId: string) => {
+    setState((prev) => ({
+      ...prev,
+      isLoading: { ...prev.isLoading, subscription: true }
+    }))
+
+    try {
+      const { data: subscriptionData, error: subError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("user_id", userId)
+        .single()
+
+      if (subError) {
+        console.log("No subscription found for user")
+        return null
+      }
+
+      return subscriptionData
+    } catch (error) {
+      console.error("Error checking subscription:", error)
+      return null
+    } finally {
+      setState((prev) => ({
+        ...prev,
+        isLoading: { ...prev.isLoading, subscription: false }
+      }))
+    }
+  }
 
   useEffect(() => {
     let mounted = true
 
-    // Initial auth check
-    async function checkInitialAuth() {
-      try {
-        const {
-          data: { session }
-        } = await supabase.auth.getSession()
-
-        if (!mounted) return
-
-        if (session) {
-          const { user, subscription } = await fetchUserAndSubscription()
-          if (mounted) {
-            setState({ user, subscription, loading: false })
-          }
-        } else {
-          if (mounted) {
-            setState({ user: null, subscription: null, loading: false })
-          }
-        }
-      } catch (error) {
-        console.error("Error checking initial auth:", error)
-        if (mounted) {
-          setState({ user: null, subscription: null, loading: false })
-        }
+    // Function to update state if component is still mounted
+    const safeSetState = (newState: Partial<AuthState>) => {
+      if (mounted) {
+        setState((prev) => ({ ...prev, ...newState }))
       }
     }
 
-    // Run initial auth check
-    checkInitialAuth()
+    // Initial auth check
+    const checkAuth = async () => {
+      try {
+        const {
+          data: { session },
+          error: sessionError
+        } = await supabase.auth.getSession()
 
-    // Listen for auth changes
+        if (sessionError) throw sessionError
+
+        if (!session) {
+          safeSetState({
+            user: null,
+            subscription: null,
+            isLoading: { ...state.isLoading, auth: false }
+          })
+          return
+        }
+
+        // Get subscription data if we have a user
+        const subscription = await checkSubscription(session.user.id)
+
+        safeSetState({
+          user: session.user,
+          subscription,
+          isLoading: { ...state.isLoading, auth: false }
+        })
+      } catch (error) {
+        console.error("Auth check error:", error)
+        safeSetState({
+          user: null,
+          subscription: null,
+          isLoading: { ...state.isLoading, auth: false }
+        })
+      }
+    }
+
+    // Run initial check
+    checkAuth()
+
+    // Set up auth state change listener
     const {
       data: { subscription: authSubscription }
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
 
-      // Don't set loading to true for initial session check
-      if (event !== "INITIAL_SESSION") {
-        setState((prev) => ({ ...prev, loading: true }))
+      if (event === "SIGNED_OUT") {
+        safeSetState({
+          user: null,
+          subscription: null,
+          isLoading: {
+            ...state.isLoading,
+            auth: false,
+            subscription: false
+          }
+        })
+        return
       }
 
-      try {
-        if (session) {
-          const { user, subscription } = await fetchUserAndSubscription()
-          if (mounted) {
-            setState({ user, subscription, loading: false })
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        if (!session) return
+
+        const subscription = await checkSubscription(session.user.id)
+
+        safeSetState({
+          user: session.user,
+          subscription,
+          isLoading: {
+            ...state.isLoading,
+            auth: false,
+            subscription: false
           }
-        } else {
-          if (mounted) {
-            setState({ user: null, subscription: null, loading: false })
-          }
-        }
-      } catch (error) {
-        console.error("Error handling auth state change:", error)
-        if (mounted) {
-          setState({ user: null, subscription: null, loading: false })
-        }
+        })
       }
     })
 
@@ -98,39 +162,12 @@ export function useAuth() {
     }
   }, [])
 
-  async function fetchUserAndSubscription() {
-    try {
-      const {
-        data: { user },
-        error: userError
-      } = await supabase.auth.getUser()
+  const signInWithGoogle = async (next?: string) => {
+    setState((prev) => ({
+      ...prev,
+      isLoading: { ...prev.isLoading, signIn: true }
+    }))
 
-      if (userError) throw userError
-
-      if (!user) {
-        return { user: null, subscription: null }
-      }
-
-      // First check if the subscriptions table exists
-      const { data: subscriptionData, error: subError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (subError) {
-        console.log("Note: No subscription found for user")
-        return { user, subscription: null }
-      }
-
-      return { user, subscription: subscriptionData }
-    } catch (error) {
-      console.error("Error in fetchUserAndSubscription:", error)
-      return { user: null, subscription: null }
-    }
-  }
-
-  async function signInWithGoogle(next?: string) {
     try {
       const redirectUrl = `${window.location.origin}/auth/callback${
         next ? `?next=${encodeURIComponent(next)}` : ""
@@ -148,19 +185,42 @@ export function useAuth() {
 
       if (error) throw error
     } catch (error) {
-      console.error("Error signing in with Google:", error)
+      console.error("Sign in error:", error)
       throw error
+    } finally {
+      setState((prev) => ({
+        ...prev,
+        isLoading: { ...prev.isLoading, signIn: false }
+      }))
     }
   }
 
-  async function signOut() {
+  const signOut = async () => {
+    setState((prev) => ({
+      ...prev,
+      isLoading: { ...prev.isLoading, signOut: true }
+    }))
+
     try {
       const { error } = await supabase.auth.signOut()
       if (error) throw error
-      // Explicitly clear state after signout
-      setState({ user: null, subscription: null, loading: false })
+
+      setState({
+        user: null,
+        subscription: null,
+        isLoading: {
+          auth: false,
+          subscription: false,
+          signIn: false,
+          signOut: false
+        }
+      })
     } catch (error) {
-      console.error("Error signing out:", error)
+      console.error("Sign out error:", error)
+      setState((prev) => ({
+        ...prev,
+        isLoading: { ...prev.isLoading, signOut: false }
+      }))
       throw error
     }
   }
@@ -168,7 +228,7 @@ export function useAuth() {
   return {
     user: state.user,
     subscription: state.subscription,
-    loading: state.loading,
+    isLoading: state.isLoading,
     isSubscribed: state.subscription?.status === "active",
     signInWithGoogle,
     signOut

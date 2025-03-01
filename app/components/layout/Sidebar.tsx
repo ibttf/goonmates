@@ -580,7 +580,7 @@ export function Sidebar() {
                           </div>
                           <span className="text-sm truncate">{user.email}</span>
                         </div>
-                        <ChevronRightIcon className="h-4 w-4 ml-2" />
+                        <ChevronRightIcon className="h-4 w-4 -ml-1" />
                       </>
                     ) : (
                       <TooltipProvider delayDuration={100}>

@@ -120,7 +120,7 @@ export default function useChat(): ChatHook {
   const sendMessage = useCallback(
     async (text: string, characterName?: string) => {
       if (!text.trim() || !user) return
-
+      console.log("test4")
       // Create a new conversation if this is the first message
       if (messages.length === 0 && !currentConversationId) {
         const newConversation = await DatabaseService.createConversation(
@@ -297,10 +297,12 @@ export default function useChat(): ChatHook {
       characterName?: string
     ) => {
       e.preventDefault()
-      if (onSubscriptionCheck && !onSubscriptionCheck()) {
-        setIsError(true)
-        return
-      }
+      // if (onSubscriptionCheck && !onSubscriptionCheck()) {
+      //   setIsError(true)
+      //   return
+      // }
+      console.log("test2")
+      console.log("input:", input)
       await sendMessage(input, characterName)
     },
     [input, sendMessage]

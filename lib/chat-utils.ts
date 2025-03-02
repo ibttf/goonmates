@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { NextResponse } from "next/server"
 import { Character } from "./characters"
-
+import OpenAI from "openai"
 /**
  * Creates and configures the Anthropic client
  */
@@ -26,11 +26,10 @@ export function validateMessages(messages: any): boolean {
  * Gets the system message for the AI
  */
 function getSystemMessage(character: Character | null = null): string {
-  if (character) {
-    return `You're ${character.name} from ${character.series}. ${character.personality} Keep responses flirty but appropriate, and match your character's speech style. Be concise like texting.`
-  }
-
-  return `You're a flirty girlfriend having a fun chat. Keep it spicy but tasteful. Be concise like texting.`
+  // if (character) {
+  //   return `You're ${character.name} from ${character.series}. ${character.personality} Keep responses flirty but appropriate, and match your character's speech style. Be concise like texting.`
+  // }
+  return `You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. Keep responses short and concise like texting. Slowly build up as the conversation goes on. Don't be extremely explicit right away.`;
 }
 
 /**
@@ -60,7 +59,11 @@ export async function generateChatCompletion(
   character: Character | null = null
 ): Promise<NextResponse> {
   try {
-    const anthropic = createAnthropicClient()
+    // const anthropic = createAnthropicClient()
+    const openai = new OpenAI({
+      apiKey: process.env.VENICE_API_KEY,
+      baseURL: process.env.VENICE_API_BASE_URL
+    })
 
     // Format messages for Claude
     const formattedMessages = formatMessages(messages)
@@ -74,20 +77,22 @@ export async function generateChatCompletion(
     // Create system message based on character info
     const systemPrompt = getSystemMessage(character)
 
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: formattedMessages
-    })
+    const completion = await openai.chat.completions.create({
+      model: "dolphin-2.9.2-qwen2-72b",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        ...formattedMessages,
+      ],
+      temperature: 0.5,
+      max_tokens: 250,
+    });
 
-    // Extract the response content, ensuring it's a text block
-    const content = response.content[0]
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type from Claude")
-    }
+    const responseContent = completion.choices[0].message.content || ""
 
-    return NextResponse.json({ message: content.text })
+    return NextResponse.json({ message: responseContent })
   } catch (error) {
     console.error("Error generating chat completion:", error)
     return NextResponse.json(

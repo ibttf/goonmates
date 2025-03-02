@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Character } from "@/lib/characters"
-import { Message } from "./MessageItem"
+import { Message } from "@/lib/supabase/client"
 
 interface UseIntroMessageResult {
   filteredMessages: Message[]
@@ -18,118 +18,116 @@ export function useIntroMessage(
     null
   )
   const [isIntroLoading, setIsIntroLoading] = useState(false)
+  const [shouldGenerateIntro, setShouldGenerateIntro] = useState(true)
 
   useEffect(() => {
     const generateIntro = async () => {
-      console.log("Checking intro generation:", {
+      console.log("🔍 [IntroMessage] Checking conditions:", {
         hasCharacter: !!character,
-        hasIntroMessage: !!introMessage,
-        messagesLength,
-        characterName: character?.name
+        shouldGenerate: shouldGenerateIntro,
+        messagesCount: chatMessages.length
       })
 
-      // Only skip if we already have an intro or there are existing messages
-      if (!character || introMessage || messagesLength > 0) {
+      if (!character || !shouldGenerateIntro) {
+        console.log("⏭️ [IntroMessage] Skipping intro generation:", {
+          reason: !character ? "No character" : "Generation not requested"
+        })
+        return
+      }
+
+      if (chatMessages.length > 0) {
+        console.log(
+          "⏭️ [IntroMessage] Chat history exists, skipping intro generation"
+        )
+        setShouldGenerateIntro(false)
         return
       }
 
       setIsIntroLoading(true)
-      console.log("Starting intro generation for:", character.name)
+      console.log(
+        "🚀 [IntroMessage] Starting intro generation for:",
+        character.name
+      )
 
       try {
-        const response = await fetch("/api/intro", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            character: character.name,
-            series: character.series,
-            personality: character.personality
+        // Create profile picture message using character's imageUrl
+        console.log(
+          "🖼️ [IntroMessage] Creating profile picture message with URL:",
+          character.imageUrl
+        )
+
+        const tempProfilePic: Message = {
+          id: `profile-${Date.now()}`,
+          role: "assistant",
+          content: "",
+          isImage: true,
+          image_url: character.imageUrl,
+          created_at: new Date().toISOString()
+        }
+
+        setProfilePicMessage(tempProfilePic)
+
+        // Generate intro message
+        try {
+          const response = await fetch("/api/intro", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              character: character.name,
+              series: character.series,
+              personality: character.personality
+            })
           })
-        })
 
-        if (!response.ok) {
-          throw new Error("Failed to generate intro")
+          if (!response.ok) {
+            throw new Error("Failed to generate intro")
+          }
+
+          const data = await response.json()
+          const tempIntro: Message = {
+            id: `intro-${Date.now()}`,
+            role: "assistant",
+            content: data.content,
+            created_at: new Date().toISOString()
+          }
+
+          setIntroMessage(tempIntro)
+        } catch (error) {
+          console.error("Error generating intro:", error)
+          // Fallback to personality for intro
+          const fallbackIntro: Message = {
+            id: `intro-${Date.now()}`,
+            role: "assistant",
+            content: character.personality,
+            created_at: new Date().toISOString()
+          }
+          setIntroMessage(fallbackIntro)
         }
-
-        const data = await response.json()
-        console.log("Intro generation response:", data)
-
-        const newIntroMessage: Message = {
-          role: "assistant",
-          content: data.content,
-          id: "intro",
-          createdAt: new Date()
-        }
-        setIntroMessage(newIntroMessage)
-
-        // Add profile picture message
-        const profileMessage: Message = {
-          role: "assistant",
-          content: "",
-          id: "profile-pic",
-          createdAt: new Date(),
-          imageUrl: character.imageUrl
-        }
-        setProfilePicMessage(profileMessage)
-        console.log("Set intro and profile messages:", {
-          newIntroMessage,
-          profileMessage
-        })
       } catch (error) {
-        console.error("Error in intro generation:", error)
-        // Fallback to using personality directly if API fails
-        const fallbackMessage: Message = {
-          role: "assistant",
-          content: character.personality,
-          id: "intro",
-          createdAt: new Date()
-        }
-        setIntroMessage(fallbackMessage)
-
-        // Still add profile picture message
-        const profileMessage: Message = {
-          role: "assistant",
-          content: "",
-          id: "profile-pic",
-          createdAt: new Date(),
-          imageUrl: character.imageUrl
-        }
-        setProfilePicMessage(profileMessage)
-        console.log("Set fallback and profile messages:", {
-          fallbackMessage,
-          profileMessage
-        })
+        console.error("❌ [IntroMessage] Error in intro message setup:", error)
       } finally {
         setIsIntroLoading(false)
-        console.log("Finished intro generation, loading state set to false")
+        setShouldGenerateIntro(false)
+        console.log("✅ [IntroMessage] Finished intro generation sequence")
       }
     }
 
     generateIntro()
-  }, [character, messagesLength, introMessage])
+  }, [character, chatMessages, shouldGenerateIntro])
 
   const resetIntro = () => {
+    console.log("🔄 [IntroMessage] Resetting intro state")
     setIntroMessage(null)
     setProfilePicMessage(null)
+    setShouldGenerateIntro(true)
+    console.log("✅ [IntroMessage] Intro state reset completed")
   }
 
-  // Combine intro message with chat messages
   const filteredMessages = [
     ...(introMessage ? [introMessage] : []),
     ...(profilePicMessage ? [profilePicMessage] : []),
     ...chatMessages
-  ] as Message[]
-
-  // Log filtered messages
-  console.log("Current messages state:", {
-    hasIntroMessage: !!introMessage,
-    hasProfilePicMessage: !!profilePicMessage,
-    isLoading: isIntroLoading,
-    totalMessages: filteredMessages.length,
-    messages: filteredMessages
-  })
+  ]
 
   return {
     filteredMessages,

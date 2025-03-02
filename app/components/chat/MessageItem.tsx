@@ -6,17 +6,21 @@ export interface Message {
   role: "user" | "assistant"
   content: string
   id?: string
-  createdAt?: Date | string
+  created_at?: string
   isImage?: boolean
-  imageUrl?: string
+  image_url?: string
 }
 
 interface MessageItemProps {
   message: Message
-  characterImage?: string
+  characterName?: string
 }
 
-export function MessageItem({ message, characterImage }: MessageItemProps) {
+export function MessageItem({ message, characterName }: MessageItemProps) {
+  const characterImage = characterName
+    ? `/characters/${characterName.toLowerCase().replace(/\s+/g, "-")}.png`
+    : "/avatar-placeholder.png"
+
   return (
     <div
       className={cn(
@@ -27,8 +31,8 @@ export function MessageItem({ message, characterImage }: MessageItemProps) {
       {message.role === "assistant" && (
         <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
           <Image
-            src={characterImage || "/avatar-placeholder.png"}
-            alt={message.content}
+            src={characterImage}
+            alt="Character"
             width={32}
             height={32}
             className="h-full w-full object-contain"
@@ -43,12 +47,19 @@ export function MessageItem({ message, characterImage }: MessageItemProps) {
             : "bg-[#222222] text-white"
         )}
       >
-        <p className="whitespace-pre-wrap">{message.content}</p>
-        {message.imageUrl && (
-          <div className="mt-2 rounded-lg overflow-hidden">
+        {!message.isImage && (
+          <p className="whitespace-pre-wrap">{message.content}</p>
+        )}
+        {message.image_url && (
+          <div
+            className={cn(
+              "rounded-lg overflow-hidden",
+              !message.isImage && "mt-2"
+            )}
+          >
             <Image
-              src={message.imageUrl}
-              alt={message.content}
+              src={message.image_url}
+              alt={message.content || "Image"}
               width={400}
               height={400}
               className="w-full h-auto"

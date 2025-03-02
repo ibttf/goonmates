@@ -5,21 +5,20 @@ export async function GET(request: Request) {
   // Extract search parameters and origin from the request URL
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get("code")
-  const next = searchParams.get("next") || "/"
 
   if (code) {
     const supabase = createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      // After successful auth, redirect to the next URL or home
-      return NextResponse.redirect(`${origin}${next}`)
+      // After successful auth, redirect back to checkout
+      return NextResponse.redirect(`${origin}`)
     }
   }
 
-  // If there's no code or an error occurred, redirect to signin with error
+  // If there's no code or an error occurred, redirect to signin
   return NextResponse.redirect(
-    `${origin}/?error=${encodeURIComponent(
+    `${origin}/signin?error=${encodeURIComponent(
       "Authentication failed. Please try again."
     )}`
   )

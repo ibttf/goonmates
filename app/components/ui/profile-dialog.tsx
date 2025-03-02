@@ -10,6 +10,7 @@ import {
 import { FaHeart } from "react-icons/fa"
 import { User } from "lucide-react"
 import { useState } from "react"
+import { toast } from "sonner"
 
 interface ProfileDialogProps {
   open: boolean
@@ -48,8 +49,10 @@ export function ProfileDialog({
     try {
       setLoading(true)
       await onCancelSubscription()
+      toast.success("Successfully cancelled subscription")
     } catch (error) {
       console.error("Error canceling subscription:", error)
+      toast.error("Failed to cancel subscription. Please try again.")
     } finally {
       setLoading(false)
     }

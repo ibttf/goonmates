@@ -391,7 +391,7 @@ export default function useChat(): ChatHook {
 
         try {
           // Wait for the audio to finish playing completely
-          await playVoiceResponse(data.message)
+          // await playVoiceResponse(data.message)
           console.log(data.message)
           console.log("Audio playback completed successfully")
         } catch (audioError) {

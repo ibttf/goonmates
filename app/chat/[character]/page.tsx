@@ -35,8 +35,8 @@ function ChatPageContent() {
     input,
     isError,
     handleInputChange,
-    handleSubmit: originalHandleSubmit,
-    generateImage
+    generateImage,
+    handleSubmit: originalHandleSubmit
   } = useChat()
 
   // Get character data
@@ -64,27 +64,9 @@ function ChatPageContent() {
     chatMessages
   )
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    await originalHandleSubmit(
-      e,
-      () => {
-        if (!isSubscribed) {
-          setShowSubscriptionDialog(true)
-          return false
-        }
-        return true
-      },
-      character?.name
-    )
-  }
-
   const handleNewChat = async () => {
-    console.log("🔄 [NewChat] Starting new chat sequence")
-    console.log("🗑️ [NewChat] Clearing messages and conversation...")
     await clearMessages()
-    console.log("🔄 [NewChat] Resetting intro state...")
     await resetIntro()
-    console.log("✅ [NewChat] New chat sequence completed")
   }
 
   const handleImageGeneration = () => {
@@ -97,6 +79,20 @@ function ChatPageContent() {
     }
 
     generateImage(input)
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    await originalHandleSubmit(
+      e,
+      () => {
+        if (!isSubscribed) {
+          setShowSubscriptionDialog(true)
+          return false
+        }
+        return true
+      },
+      character?.name
+    )
   }
 
   // Show loading state while character is being loaded
@@ -162,7 +158,6 @@ function ChatPageContent() {
           onGenerateImage={handleImageGeneration}
         />
       </div>
-
       <SubscriptionDialog
         open={showSubscriptionDialog}
         onOpenChange={setShowSubscriptionDialog}

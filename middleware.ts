@@ -9,8 +9,10 @@ export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req: request, res })
 
-  // Refresh session if expired - required for Server Components
-  await supabase.auth.getSession()
+  // Get the session
+  const {
+    data: { session }
+  } = await supabase.auth.getSession()
 
   // Check if the request is for a protected path
   const requestUrl = new URL(request.url)
@@ -19,7 +21,7 @@ export async function middleware(request: NextRequest) {
   )
 
   // If it's a protected path and there's no session, redirect to login
-  if (isProtectedPath && !supabase.auth.session) {
+  if (isProtectedPath && !session) {
     const redirectUrl = new URL("/", request.url)
     redirectUrl.searchParams.set("next", requestUrl.pathname)
     return NextResponse.redirect(redirectUrl)

@@ -1,17 +1,31 @@
 import { MessageItem, Message } from "./MessageItem"
 import Image from "next/image"
+import { useEffect, useRef } from "react"
 
 interface MessageListProps {
   messages: Message[]
   isLoading: boolean
-  characterImage?: string
+  characterName?: string
 }
 
 export function MessageList({
   messages,
   isLoading,
-  characterImage
+  characterName
 }: MessageListProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const characterImage = characterName
+    ? `/characters/${characterName.toLowerCase().replace(/\s+/g, "-")}.png`
+    : "/avatar-placeholder.png"
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, isLoading]) // Scroll when messages or loading state changes
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto w-full p-4 space-y-4">
@@ -19,7 +33,7 @@ export function MessageList({
           <MessageItem
             key={msg.id || index}
             message={msg}
-            characterImage={characterImage}
+            characterName={characterName}
           />
         ))}
 
@@ -27,8 +41,8 @@ export function MessageList({
           <div className="flex gap-3 items-start">
             <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
               <Image
-                src={characterImage || "/avatar-placeholder.png"}
-                alt={"Loading..."}
+                src={characterImage}
+                alt="Loading..."
                 width={32}
                 height={32}
                 className="h-full w-full object-contain"
@@ -43,6 +57,9 @@ export function MessageList({
             </div>
           </div>
         )}
+
+        {/* Invisible element to scroll to */}
+        <div ref={messagesEndRef} />
       </div>
     </div>
   )

@@ -88,16 +88,16 @@ function ChatPageContent() {
   }
 
   const handleImageGeneration = () => {
-    if (!input.trim()) return;
+    if (!input.trim()) return
 
     // Check subscription status
     if (!isSubscribed) {
-      setShowSubscriptionDialog(true);
-      return;
+      setShowSubscriptionDialog(true)
+      return
     }
 
-    generateImage(input);
-  };
+    generateImage(input)
+  }
 
   // Show loading state while character is being loaded
   if (characterName && !character) {

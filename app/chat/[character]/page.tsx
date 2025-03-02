@@ -63,15 +63,6 @@ function ChatPageContent() {
     chatMessages
   )
 
-  console.log("Chat page state:", {
-    character,
-    characterName,
-    isLoading,
-    isIntroLoading,
-    messagesCount: filteredMessages.length,
-    chatMessagesCount: chatMessages.length
-  })
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     await originalHandleSubmit(
       e,
@@ -86,9 +77,13 @@ function ChatPageContent() {
     )
   }
 
-  const handleNewChat = () => {
-    clearMessages()
-    resetIntro()
+  const handleNewChat = async () => {
+    console.log("🔄 [NewChat] Starting new chat sequence")
+    console.log("🗑️ [NewChat] Clearing messages and conversation...")
+    await clearMessages()
+    console.log("🔄 [NewChat] Resetting intro state...")
+    await resetIntro()
+    console.log("✅ [NewChat] New chat sequence completed")
   }
 
   // Show loading state while character is being loaded

@@ -140,13 +140,7 @@ function NavItemSkeleton({ expanded }: { expanded: boolean }) {
 
 export function Sidebar() {
   const { isExpanded, setIsExpanded } = useSidebar()
-  const {
-    user,
-    isLoading: { auth: userLoading },
-    isSubscribed,
-    signInWithGoogle,
-    signOut
-  } = useAuthContext()
+  const { user, isLoading, isSubscribed, signIn, signOut } = useAuthContext()
   const pathname = usePathname()
   const [loading, setLoading] = useState(false)
   const isMobile = useIsMobile()
@@ -155,8 +149,8 @@ export function Sidebar() {
 
   // Debug logging
   useEffect(() => {
-    console.log("Auth state:", { user, isSubscribed, loading: userLoading })
-  }, [user, isSubscribed, userLoading])
+    console.log("Auth state:", { user, isSubscribed, loading: isLoading })
+  }, [user, isSubscribed, isLoading])
 
   // Determine active states
   const isExploreActive = pathname === "/"
@@ -173,7 +167,7 @@ export function Sidebar() {
   const handleSignIn = async () => {
     try {
       setLoading(true)
-      await signInWithGoogle()
+      await signIn()
       // Loading will be reset by the useEffect when user changes
     } catch (error) {
       console.error("Error signing in:", error)
@@ -194,21 +188,21 @@ export function Sidebar() {
 
   // Reset local loading state when auth state changes
   useEffect(() => {
-    if (!userLoading) {
-      // Only reset when userLoading is false
+    if (!isLoading) {
+      // Only reset when isLoading is false
       setLoading(false)
     }
-  }, [user, userLoading])
+  }, [user, isLoading])
 
   // Debug logging
   useEffect(() => {
     console.log("Auth state:", {
       user,
       isSubscribed,
-      loading: userLoading,
+      loading: isLoading,
       signInLoading: loading
     })
-  }, [user, isSubscribed, userLoading, loading])
+  }, [user, isSubscribed, isLoading, loading])
 
   const handleCheckout = async () => {
     try {
@@ -279,7 +273,7 @@ export function Sidebar() {
         {isMobileMenuOpen && (
           <div className="flex flex-col flex-1 px-4 py-6 space-y-6 overflow-y-auto max-h-[calc(100vh-4rem)] w-full relative z-10">
             <div className="space-y-2">
-              {userLoading ? (
+              {isLoading ? (
                 <>
                   <NavItemSkeleton expanded={true} />
                   <NavItemSkeleton expanded={true} />
@@ -344,7 +338,7 @@ export function Sidebar() {
                 </Button>
               )}
 
-              {!userLoading && !user && (
+              {!isLoading && !user && (
                 <Button
                   variant="outline"
                   className="w-full h-11 border-[#333333] bg-transparent text-white hover:bg-[#222222] hover:text-white"
@@ -438,7 +432,7 @@ export function Sidebar() {
         <div className="h-[1px] bg-[#222222] mb-4" />
 
         <div className="px-3 space-y-2">
-          {userLoading ? (
+          {isLoading ? (
             <>
               <NavItemSkeleton expanded={isExpanded} />
               <NavItemSkeleton expanded={isExpanded} />
@@ -464,7 +458,7 @@ export function Sidebar() {
         </div>
 
         <div className="mt-auto px-3 pb-4 flex flex-col gap-4 relative z-10">
-          {userLoading ? (
+          {isLoading ? (
             <div
               className={cn(
                 "w-full h-11 bg-gray-800 rounded animate-pulse",
@@ -516,7 +510,7 @@ export function Sidebar() {
                 </>
               )}
 
-              {!userLoading && !user && (
+              {!isLoading && !user && (
                 <Button
                   variant="outline"
                   className="w-full h-11 border-[#333333] bg-transparent text-white hover:bg-[#222222] hover:text-white"

@@ -250,7 +250,7 @@ export default function useChat(): ChatHook {
           user.id,
           "Here is the generated image:",
           "assistant",
-          data.imageUrl
+          imageUrl
         )
 
         if (assistantMessage) {

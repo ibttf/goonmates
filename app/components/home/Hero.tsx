@@ -54,7 +54,7 @@ export function Hero() {
             </Link>
           </div>
         </div>
-        <div className="w-1/2 relative h-full">
+        <div className="w-1/3 md:w-1/2 relative h-full">
           <Image
             src="/nami.png"
             alt="Nami"

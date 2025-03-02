@@ -135,7 +135,7 @@ function ChatPageContent() {
         <MessageList
           messages={filteredMessages}
           isLoading={isLoading || isIntroLoading}
-          characterName={character.name}
+          character={character}
         />
 
         <ChatInput

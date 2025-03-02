@@ -8,11 +8,10 @@ export const supabase = createBrowserClient(
 // Types for our database
 export interface Message {
   id: string
-  conversation_id: string
-  user_id: string
   role: "user" | "assistant"
   content: string
   image_url?: string
+  isImage?: boolean
   created_at: string
 }
 

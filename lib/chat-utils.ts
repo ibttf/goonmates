@@ -84,7 +84,7 @@ export async function generateChatCompletion(
           role: "system",
           content: systemPrompt,
         },
-        ...formattedMessages,
+        ...validMessages,
       ],
       temperature: 0.5,
       max_tokens: 250,

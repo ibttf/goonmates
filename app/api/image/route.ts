@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     if (formData.has('use_default_neg')) params.append('use_default_neg', formData.get('use_default_neg') as string);
     if (formData.has('steps')) params.append('steps', formData.get('steps') as string);
     if (formData.has('scale')) params.append('scale', formData.get('scale') as string);
-    if (formData.has('num_images')) params.append('num_images', formData.get('num_images') as string ?? '1');
+    params.append('num_images', formData.get('num_images') as string ?? '1');
     if (formData.has('seed')) params.append('seed', formData.get('seed') as string);
     if (formData.has('scheduler')) params.append('scheduler', formData.get('scheduler') as string);
     if (formData.has('lora')) params.append('lora', formData.get('lora') as string);

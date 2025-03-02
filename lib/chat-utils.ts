@@ -37,7 +37,8 @@ export function getSystemMessage(characterInfo: any = null): string {
   // }
 
   return `
-  You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. 
+  You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. Keep it short and concise like a text message. 
+  Do not over respond. Match the tone of the message, but slowly make it more explicit as the conversation goes on.
   `
 }
 
@@ -57,18 +58,19 @@ export async function generateChatCompletion(
     })
 
     // Create system message based on character info if available
-    const systemMessage = characterInfo
-      ? `
-        You are ${characterInfo.name} from ${characterInfo.series}. 
-        Your personality: ${characterInfo.personality}
+    // const systemMessage = characterInfo
+    //   ? `
+    //     You are ${characterInfo.name} from ${characterInfo.series}. 
+    //     Your personality: ${characterInfo.personality}
         
-        Respond in character, matching ${characterInfo.name}'s personality and speech patterns.
-        Keep responses concise like a text message. Be flirty but appropriate.
-        `
-      : `
-        You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. Keep it short and concise like a text message. 
-        Do not over respond. Match the tone of the message, but slowly make it more explicit as the conversation goes on.
-        `
+    //     Respond in character, matching ${characterInfo.name}'s personality and speech patterns.
+    //     Keep responses concise like a text message. Be flirty but appropriate.
+    //     `
+    //   : `
+    //     You are this user's girlfriend. Send a message in a very explicit sexual tone. Make them aroused and horny. Keep it short and concise like a text message. 
+    //     Do not over respond. Match the tone of the message, but slowly make it more explicit as the conversation goes on.
+    //     `
+    const systemPrompt = getSystemMessage(character)
 
     // Ensure all messages have content
     const validMessages = messages.filter((msg: { role: string; content?: string }) => 

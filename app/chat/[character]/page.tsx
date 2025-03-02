@@ -35,7 +35,8 @@ function ChatPageContent() {
     input,
     isError,
     handleInputChange,
-    handleSubmit: originalHandleSubmit
+    handleSubmit: originalHandleSubmit,
+    generateImage
   } = useChat()
 
   // Get character data
@@ -85,6 +86,18 @@ function ChatPageContent() {
     await resetIntro()
     console.log("✅ [NewChat] New chat sequence completed")
   }
+
+  const handleImageGeneration = () => {
+    if (!input.trim()) return;
+
+    // Check subscription status
+    if (!isSubscribed) {
+      setShowSubscriptionDialog(true);
+      return;
+    }
+
+    generateImage(input);
+  };
 
   // Show loading state while character is being loaded
   if (characterName && !character) {
@@ -146,6 +159,7 @@ function ChatPageContent() {
           inputRef={inputRef}
           onInputChange={handleInputChange}
           onSubmit={handleSubmit}
+          onGenerateImage={handleImageGeneration}
         />
       </div>
 

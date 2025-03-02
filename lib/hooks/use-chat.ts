@@ -1,24 +1,10 @@
 "use client"
 
 import { useState, useCallback, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
 import { v4 as uuidv4 } from "uuid"
 import { useAuth } from "./use-auth"
-
-export interface Message {
-  id?: string
-  role: "user" | "assistant"
-  content: string
-  imageUrl?: string
-  createdAt?: string
-}
-
-interface Conversation {
-  id: string
-  title: string
-  createdAt: string
-  lastMessageAt: string
-}
+import { DatabaseService } from "../services/database"
+import type { Message, Conversation } from "../supabase/client"
 
 interface ChatHook {
   messages: Message[]
@@ -65,7 +51,6 @@ export default function useChat(): ChatHook {
     if (user) {
       loadUserConversations()
     } else {
-      // Clear conversations when user logs out
       setConversations([])
       setCurrentConversationId(null)
     }
@@ -82,28 +67,12 @@ export default function useChat(): ChatHook {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
-        .from("conversations")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("last_message_at", { ascending: false })
+      const conversations = await DatabaseService.getUserConversations(user.id)
+      setConversations(conversations)
 
-      if (error) throw error
-
-      if (data) {
-        const formattedConversations: Conversation[] = data.map((conv) => ({
-          id: conv.id,
-          title: conv.title,
-          createdAt: conv.created_at,
-          lastMessageAt: conv.last_message_at
-        }))
-
-        setConversations(formattedConversations)
-
-        // Load the most recent conversation if exists
-        if (formattedConversations.length > 0 && !currentConversationId) {
-          setCurrentConversationId(formattedConversations[0].id)
-        }
+      // Load the most recent conversation if exists
+      if (conversations.length > 0 && !currentConversationId) {
+        setCurrentConversationId(conversations[0].id)
       }
     } catch (error) {
       console.error("Error loading conversations:", error)
@@ -114,33 +83,22 @@ export default function useChat(): ChatHook {
     setMessages([])
 
     if (!user) {
-      // For non-authenticated users, just clear messages
       setCurrentConversationId(null)
       return
     }
 
     try {
-      const newId = crypto.randomUUID()
-      const now = new Date().toISOString()
+      const newConversation = await DatabaseService.createConversation(
+        user.id,
+        "New Conversation",
+        "New Chat"
+      )
 
-      // Create a new conversation in the database
-      const { error } = await supabase.from("conversations").insert({
-        id: newId,
-        user_id: user.id,
-        title: "New Conversation",
-        created_at: now,
-        last_message_at: now
-      })
-      console.log(error)
-      if (error) throw error
-
-      setCurrentConversationId(newId)
-
-      // Refresh the conversations list
-      loadUserConversations()
-      console.log("New conversation created:", newId)
+      if (newConversation) {
+        setCurrentConversationId(newConversation.id)
+        await loadUserConversations()
+      }
     } catch (error) {
-      console.log(error)
       console.error("Error creating new conversation:", error)
     }
   }, [user])
@@ -149,90 +107,118 @@ export default function useChat(): ChatHook {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true })
-
-      if (error) throw error
-
-      if (data) {
-        const loadedMessages: Message[] = data.map((msg) => ({
-          id: msg.id,
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-          imageUrl: msg.image_url,
-          createdAt: msg.created_at
-        }))
-
-        setMessages(loadedMessages)
-        setCurrentConversationId(conversationId)
-      }
+      const messages = await DatabaseService.getConversationMessages(
+        conversationId
+      )
+      setMessages(messages)
+      setCurrentConversationId(conversationId)
     } catch (error) {
       console.error("Error loading conversation:", error)
     }
   }
 
-  const saveMessage = async (message: Message) => {
-    if (!user || !currentConversationId) return message
+  const sendMessage = useCallback(
+    async (text: string, characterName?: string) => {
+      if (!text.trim() || !user) return
 
-    try {
-      const now = new Date().toISOString()
-      const messageId = crypto.randomUUID()
-
-      // Save the message to the database
-      const { error } = await supabase.from("messages").insert({
-        id: messageId,
-        conversation_id: currentConversationId,
-        user_id: user.id,
-        role: message.role,
-        content: message.content,
-        image_url: message.imageUrl,
-        created_at: now
-      })
-
-      if (error) throw error
-
-      // Update the conversation's last_message_at
-      await supabase
-        .from("conversations")
-        .update({
-          last_message_at: now,
-          // Update title to first message if it's the first message
-          ...(messages.length === 0 && message.role === "user"
-            ? { title: message.content.substring(0, 50) }
-            : {})
-        })
-        .eq("id", currentConversationId)
-
-      // Return the saved message with its ID
-      return {
-        ...message,
-        id: messageId,
-        createdAt: now
+      // Create a new conversation if this is the first message
+      if (messages.length === 0 && !currentConversationId) {
+        const newConversation = await DatabaseService.createConversation(
+          user.id,
+          characterName || "Unknown Character",
+          text.substring(0, 50) // Use first 50 chars of message as title
+        )
+        if (newConversation) {
+          setCurrentConversationId(newConversation.id)
+        } else {
+          setIsError(true)
+          return
+        }
       }
-    } catch (error) {
-      console.error("Error saving message:", error)
-      return message
-    }
-  }
+
+      if (!currentConversationId) {
+        setIsError(true)
+        return
+      }
+
+      setIsLoading(true)
+
+      try {
+        // Save user message
+        const savedUserMessage = await DatabaseService.saveMessage(
+          currentConversationId,
+          user.id,
+          text,
+          "user"
+        )
+
+        if (savedUserMessage) {
+          setMessages((prev) => [...prev, savedUserMessage])
+        }
+
+        // Get AI response
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            messages: [...messages, { role: "user", content: text }],
+            characterName: characterName
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to get response from API")
+        }
+
+        const data = await response.json()
+        console.log("API Response:", data)
+
+        if (data.error) {
+          throw new Error(data.error)
+        }
+
+        // Save assistant message
+        const savedAssistantMessage = await DatabaseService.saveMessage(
+          currentConversationId,
+          user.id,
+          data.message,
+          "assistant"
+        )
+
+        if (savedAssistantMessage) {
+          setMessages((prev) => [...prev, savedAssistantMessage])
+        }
+      } catch (error) {
+        console.error("Error sending message:", error)
+        setIsError(true)
+      } finally {
+        setIsLoading(false)
+        setInput("")
+      }
+    },
+    [messages, user, currentConversationId]
+  )
 
   const generateImage = useCallback(
     async (prompt: string) => {
+      if (!user || !currentConversationId) return
+
       try {
         setIsLoading(true)
 
-        const userMessage: Message = {
-          role: "user",
-          content: `Generate image: ${prompt}`
-        }
+        // Save user message for image generation
+        const userMessage = await DatabaseService.saveMessage(
+          currentConversationId,
+          user.id,
+          `Generate image: ${prompt}`,
+          "user"
+        )
 
-        // Save user message if authenticated
-        const savedUserMessage = user
-          ? await saveMessage(userMessage)
-          : userMessage
-        setMessages((prev) => [...prev, savedUserMessage])
+        if (userMessage) {
+          setMessages((prev) => [...prev, userMessage])
+        }
 
         const response = await fetch("/api/venice-image", {
           method: "POST",
@@ -255,166 +241,70 @@ export default function useChat(): ChatHook {
           throw new Error("No image URL returned from API")
         }
 
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: "Here is the generated image:",
-          imageUrl: data.imageUrl
+        // Save assistant message with generated image
+        const assistantMessage = await DatabaseService.saveMessage(
+          currentConversationId,
+          user.id,
+          "Here is the generated image:",
+          "assistant",
+          data.imageUrl
+        )
+
+        if (assistantMessage) {
+          setMessages((prev) => [...prev, assistantMessage])
         }
-
-        // Save assistant message if authenticated
-        const savedAssistantMessage = user
-          ? await saveMessage(assistantMessage)
-          : assistantMessage
-        setMessages((prev) => [...prev, savedAssistantMessage])
-
-        return data
       } catch (error) {
         console.error("Error generating image:", error)
 
-        const errorMessage: Message = {
-          role: "assistant",
-          content:
-            "Sorry, I encountered an error generating the image. Please try again."
-        }
+        const errorMessage = await DatabaseService.saveMessage(
+          currentConversationId,
+          user.id,
+          "Sorry, I encountered an error generating the image. Please try again.",
+          "assistant"
+        )
 
-        // Save error message if authenticated
-        const savedErrorMessage = user
-          ? await saveMessage(errorMessage)
-          : errorMessage
-        setMessages((prev) => [...prev, savedErrorMessage])
+        if (errorMessage) {
+          setMessages((prev) => [...prev, errorMessage])
+        }
 
         throw error
       } finally {
         setIsLoading(false)
       }
     },
-    [user, messages, currentConversationId]
+    [user, currentConversationId]
   )
 
-  const playVoiceResponse = async (text: string) => {
-    try {
-      // request to text-to-speech API
-      const response = await fetch("/api/text-to-speech", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ text })
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to generate voice response")
-      }
-
-      const audioBlob = await response.blob()
-      const audioUrl = URL.createObjectURL(audioBlob)
-      const audio = new Audio(audioUrl)
-
-      // Set audio properties to ensure better playback
-      audio.preload = "auto"
-
-      return new Promise<void>((resolve, reject) => {
-        // Handle audio playback errors
-        audio.addEventListener("error", (e) => {
-          console.error("Audio playback error:", e)
-          reject(new Error("Audio playback failed"))
-        })
-
-        // Handle audio ending
-        audio.addEventListener("ended", () => {
-          // Clean up the object URL to prevent memory leaks
-          URL.revokeObjectURL(audioUrl)
-          resolve()
-        })
-
-        // Start playing the audio
-        const playPromise = audio.play()
-
-        // Handle play() promise rejection (common in some browsers)
-        if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            console.error("Audio play promise error:", error)
-            reject(error)
-          })
-        }
-      })
-    } catch (error) {
-      console.error("Error playing voice response:", error)
-      throw error // Re-throw to allow proper handling upstream
-    }
-  }
-
-  const sendMessage = useCallback(
-    async (text: string, characterName?: string) => {
-      if (!text.trim()) return
-
-      // Create a new conversation if this is the first message and user is authenticated
-      if (messages.length === 0 && user && !currentConversationId) {
-        await startNewConversation()
-      }
-
-      const userMessage: Message = { role: "user", content: text }
-
-      // Save user message if authenticated
-      const savedUserMessage = user
-        ? await saveMessage(userMessage)
-        : userMessage
-      setMessages((prev) => [...prev, savedUserMessage])
-
-      setIsLoading(true)
-
-      try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            messages: [...messages, userMessage],
-            characterName: characterName
-          })
-        })
-
-        if (!response.ok) {
-          console.log(response)
-          throw new Error("Failed to get response from API")
-        }
-
-        const data = await response.json()
-        const botMessage: Message = { role: "assistant", content: data.message }
-
-        // Save assistant message if authenticated
-        const savedBotMessage = user
-          ? await saveMessage(botMessage)
-          : botMessage
-        setMessages((prev) => [...prev, savedBotMessage])
-
-        try {
-          // Wait for the audio to finish playing completely
-          await playVoiceResponse(data.message)
-          console.log(data.message)
-          console.log("Audio playback completed successfully")
-        } catch (audioError) {
-          console.error("Audio playback failed:", audioError)
-          // Continue with the conversation even if audio fails
-        }
-      } catch (error) {
-        console.error("Error sending message:", error)
-        setIsError(true)
-      } finally {
-        setIsLoading(false)
-        setInput("")
-      }
-    },
-    [messages, user, currentConversationId, saveMessage, playVoiceResponse]
-  )
-
-  const clearMessages = useCallback(() => {
+  const clearMessages = useCallback(async () => {
+    console.log("🗑️ [Chat] Clearing messages from state")
     setMessages([])
-    if (user) {
-      startNewConversation()
+
+    if (user && currentConversationId) {
+      console.log(
+        "🗑️ [Chat] Deleting conversation from database:",
+        currentConversationId
+      )
+      // Delete the current conversation from the database
+      await DatabaseService.deleteConversation(currentConversationId)
+
+      // Clear the current conversation ID before starting new one
+      setCurrentConversationId(null)
+
+      console.log("🔄 [Chat] Starting new conversation")
+      // Create a new conversation
+      const newConversation = await DatabaseService.createConversation(
+        user.id,
+        "New Conversation",
+        "New Chat"
+      )
+
+      if (newConversation) {
+        console.log("✅ [Chat] Created new conversation:", newConversation.id)
+        setCurrentConversationId(newConversation.id)
+        await loadUserConversations()
+      }
     }
-  }, [user, startNewConversation])
+  }, [user, currentConversationId, loadUserConversations])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value)

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-types": "SUPABASE_ACCESS_TOKEN=\"$SUPABASE_ACCESS_TOKEN\" npx supabase gen types typescript --linked > lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -47,6 +48,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
     "openai": "^4.86.1",
+    "supabase": "^2.15.8",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

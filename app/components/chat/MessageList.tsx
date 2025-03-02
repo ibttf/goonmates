@@ -1,5 +1,6 @@
 import { MessageItem, Message } from "./MessageItem"
 import Image from "next/image"
+import { useEffect, useRef } from "react"
 
 interface MessageListProps {
   messages: Message[]
@@ -12,6 +13,16 @@ export function MessageList({
   isLoading,
   characterImage
 }: MessageListProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, isLoading]) // Scroll when messages or loading state changes
+
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-3xl mx-auto w-full p-4 space-y-4">
@@ -43,6 +54,9 @@ export function MessageList({
             </div>
           </div>
         )}
+
+        {/* Invisible element to scroll to */}
+        <div ref={messagesEndRef} />
       </div>
     </div>
   )

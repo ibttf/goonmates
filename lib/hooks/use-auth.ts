@@ -59,24 +59,15 @@ export function useAuth(): UseAuthReturn {
           .single()
 
         if (error) {
-          // Log the specific error details
-          const pgError = error as PostgrestError
-          console.error("Subscription check error:", {
-            code: pgError.code,
-            message: pgError.message,
-            details: pgError.details,
-            hint: pgError.hint
-          })
-
-          // If the error is that the table doesn't exist, we'll assume no subscription
-          if (pgError.code === "42P01") {
-            // relation "subscriptions" does not exist
-            console.log("Subscriptions table does not exist yet")
+          // If no row found, it means no subscription
+          if (error.code === "PGRST116") {
             setIsSubscribed(false)
             return
           }
 
-          throw error
+          console.error("Unexpected error checking subscription:", error)
+          setIsSubscribed(false)
+          return
         }
 
         setIsSubscribed(data?.status === "active")

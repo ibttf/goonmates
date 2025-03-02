@@ -21,7 +21,7 @@ export function useAuthContext() {
   if (!context) {
     throw new Error("useAuthContext must be used within an AuthProvider")
   }
-  return { ...context, isSubscribed: true }
+  return context
 }
 
 export function Providers({ children, ...props }: ThemeProviderProps) {

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { Send } from "lucide-react"
+import { Send, Image } from "lucide-react"
 import { FormEvent, ChangeEvent, RefObject } from "react"
 
 interface ChatInputProps {
@@ -12,6 +12,7 @@ interface ChatInputProps {
   inputRef: RefObject<HTMLInputElement | null>
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void
   onSubmit: (e: FormEvent<HTMLFormElement>) => void
+  onGenerateImage?: () => void
 }
 
 export function ChatInput({
@@ -21,7 +22,8 @@ export function ChatInput({
   characterName,
   inputRef,
   onInputChange,
-  onSubmit
+  onSubmit,
+  onGenerateImage
 }: ChatInputProps) {
   return (
     <div className="border-t border-[#222222] bg-[#111111] p-4">
@@ -38,6 +40,25 @@ export function ChatInput({
             )}
             disabled={isLoading}
           />
+          {onGenerateImage && (
+            <Button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onGenerateImage();
+              }}
+              className={cn(
+                "text-white",
+                isLoading
+                  ? "bg-purple-500/50 cursor-not-allowed"
+                  : "bg-purple-500 hover:bg-purple-600"
+              )}
+              disabled={isLoading}
+              title="Generate image"
+            >
+              <Image className="h-4 w-4" />
+            </Button>
+          )}
           <Button
             type="submit"
             className={cn(
@@ -54,4 +75,4 @@ export function ChatInput({
       </div>
     </div>
   )
-} 
+}

@@ -221,75 +221,73 @@ export default function useChat(): ChatHook {
   const generateImage = useCallback(
     async (prompt: string) => {
       try {
-        setIsLoading(true)
+        setIsLoading(true);
 
         const userMessage: Message = {
           role: "user",
           content: `Generate image: ${prompt}`
-        }
+        };
 
         // Save user message if authenticated
         const savedUserMessage = user
           ? await saveMessage(userMessage)
-          : userMessage
-        setMessages((prev) => [...prev, savedUserMessage])
+          : userMessage;
+        setMessages((prev) => [...prev, savedUserMessage]);
 
-        const response = await fetch("/api/venice-image", {
+        // Create a FormData object for the API request
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+        formData.append('model_id', 'nGyN44N');
+
+        const response = await fetch("/api/image", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "SD 3.5",
-            prompt: prompt
-          })
-        })
+          body: formData
+        });
 
         if (!response.ok) {
-          throw new Error("Failed to generate image")
+          throw new Error("Failed to generate image");
         }
 
-        const data = await response.json()
+        const data = await response.json();
+        console.log(data)
 
-        if (!data.imageUrl) {
-          throw new Error("No image URL returned from API")
+        // Get the image URL from the response
+        const imageUrl = data.images?.[0]
+
+        if (!imageUrl) {
+          throw new Error("No image URL in the response");
         }
 
+        // Add assistant message with the image
         const assistantMessage: Message = {
           role: "assistant",
-          content: "Here is the generated image:",
-          imageUrl: data.imageUrl
-        }
+          content: `Generated image for prompt: "${prompt}"`,
+          imageUrl: imageUrl
+        };
 
         // Save assistant message if authenticated
         const savedAssistantMessage = user
           ? await saveMessage(assistantMessage)
-          : assistantMessage
-        setMessages((prev) => [...prev, savedAssistantMessage])
-
-        return data
+          : assistantMessage;
+        setMessages((prev) => [...prev, savedAssistantMessage]);
       } catch (error) {
-        console.error("Error generating image:", error)
+        console.error("Error generating image:", error);
+        setIsError(true);
 
+        // Add error message for user
         const errorMessage: Message = {
           role: "assistant",
-          content:
-            "Sorry, I encountered an error generating the image. Please try again."
-        }
+          content: "Sorry, I couldn't generate that image. Please try again with a different prompt."
+        };
 
-        // Save error message if authenticated
-        const savedErrorMessage = user
-          ? await saveMessage(errorMessage)
-          : errorMessage
-        setMessages((prev) => [...prev, savedErrorMessage])
-
-        throw error
+        setMessages((prev) => [...prev, errorMessage]);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
+        setInput("");
       }
     },
-    [user, messages, currentConversationId]
-  )
+    [user, setMessages, setIsLoading, setIsError, setInput, saveMessage]
+  );
 
   const playVoiceResponse = async (text: string) => {
     try {
@@ -364,7 +362,8 @@ export default function useChat(): ChatHook {
       setIsLoading(true)
 
       try {
-        const response = await fetch("/api/chat", {
+        // First, call the chat API to get the text response
+        const chatResponse = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -375,13 +374,47 @@ export default function useChat(): ChatHook {
           })
         })
 
-        if (!response.ok) {
-          console.log(response)
+        if (!chatResponse.ok) {
+          console.log(chatResponse)
           throw new Error("Failed to get response from API")
         }
 
-        const data = await response.json()
-        const botMessage: Message = { role: "assistant", content: data.message }
+        const chatData = await chatResponse.json()
+
+        // Now, call the image API to generate an image based on the user's message
+        let imageUrl = null;
+
+        try {
+          const formData = new FormData();
+          formData.append('prompt', text);
+          formData.append('model_id', 'sd3');  // Using Stable Diffusion 3
+
+          const imageResponse = await fetch("/api/image", {
+            method: "POST",
+            body: formData
+          });
+
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            if (imageData && imageData.output && imageData.output.length > 0) {
+              imageUrl = imageData.output[0];
+            } else {
+              console.warn("Image data format not as expected:", imageData);
+            }
+          } else {
+            console.error("Failed to generate image:", await imageResponse.text());
+          }
+        } catch (imageError) {
+          console.error("Error generating image:", imageError);
+          // Continue with the conversation even if image generation fails
+        }
+
+        // Create bot message with both text response and image
+        const botMessage: Message = {
+          role: "assistant",
+          content: chatData.message,
+          imageUrl: imageUrl
+        }
 
         // Save assistant message if authenticated
         const savedBotMessage = user
@@ -392,7 +425,7 @@ export default function useChat(): ChatHook {
         try {
           // Wait for the audio to finish playing completely
           // await playVoiceResponse(data.message)
-          console.log(data.message)
+          console.log(chatData.message)
           console.log("Audio playback completed successfully")
         } catch (audioError) {
           console.error("Audio playback failed:", audioError)

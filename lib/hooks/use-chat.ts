@@ -206,7 +206,7 @@ export default function useChat(): ChatHook {
       if (!user || !currentConversationId) return
 
       try {
-        setIsLoading(true)
+        setIsLoading(true);
 
         // Save user message for image generation
         const userMessage = await DatabaseService.saveMessage(
@@ -220,25 +220,28 @@ export default function useChat(): ChatHook {
           setMessages((prev) => [...prev, userMessage])
         }
 
-        const response = await fetch("/api/venice-image", {
+        // Create a FormData object for the API request
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+        formData.append('model_id', 'nGyN44N');
+
+        const response = await fetch("/api/image", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "SD 3.5",
-            prompt: prompt
-          })
-        })
+          body: formData
+        });
 
         if (!response.ok) {
-          throw new Error("Failed to generate image")
+          throw new Error("Failed to generate image");
         }
 
-        const data = await response.json()
+        const data = await response.json();
+        console.log(data)
 
-        if (!data.imageUrl) {
-          throw new Error("No image URL returned from API")
+        // Get the image URL from the response
+        const imageUrl = data.images?.[0]
+
+        if (!imageUrl) {
+          throw new Error("No image URL in the response");
         }
 
         // Save assistant message with generated image
@@ -254,7 +257,8 @@ export default function useChat(): ChatHook {
           setMessages((prev) => [...prev, assistantMessage])
         }
       } catch (error) {
-        console.error("Error generating image:", error)
+        console.error("Error generating image:", error);
+        setIsError(true);
 
         const errorMessage = await DatabaseService.saveMessage(
           currentConversationId,
@@ -269,7 +273,8 @@ export default function useChat(): ChatHook {
 
         throw error
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
+        setInput("");
       }
     },
     [user, currentConversationId]

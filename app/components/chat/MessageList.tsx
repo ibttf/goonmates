@@ -5,15 +5,18 @@ import { useEffect, useRef } from "react"
 interface MessageListProps {
   messages: Message[]
   isLoading: boolean
-  characterImage?: string
+  characterName?: string
 }
 
 export function MessageList({
   messages,
   isLoading,
-  characterImage
+  characterName
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const characterImage = characterName
+    ? `/characters/${characterName.toLowerCase().replace(/\s+/g, "-")}.png`
+    : "/avatar-placeholder.png"
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -30,7 +33,7 @@ export function MessageList({
           <MessageItem
             key={msg.id || index}
             message={msg}
-            characterImage={characterImage}
+            characterName={characterName}
           />
         ))}
 
@@ -38,8 +41,8 @@ export function MessageList({
           <div className="flex gap-3 items-start">
             <div className="h-8 w-8 rounded-lg overflow-hidden bg-[#222222] flex items-center justify-center mt-1">
               <Image
-                src={characterImage || "/avatar-placeholder.png"}
-                alt={"Loading..."}
+                src={characterImage}
+                alt="Loading..."
                 width={32}
                 height={32}
                 className="h-full w-full object-contain"

@@ -275,36 +275,11 @@ export default function useChat(): ChatHook {
     [user, currentConversationId]
   )
 
-  const clearMessages = useCallback(async () => {
+  const clearMessages = useCallback(() => {
     console.log("🗑️ [Chat] Clearing messages from state")
     setMessages([])
-
-    if (user && currentConversationId) {
-      console.log(
-        "🗑️ [Chat] Deleting conversation from database:",
-        currentConversationId
-      )
-      // Delete the current conversation from the database
-      await DatabaseService.deleteConversation(currentConversationId)
-
-      // Clear the current conversation ID before starting new one
-      setCurrentConversationId(null)
-
-      console.log("🔄 [Chat] Starting new conversation")
-      // Create a new conversation
-      const newConversation = await DatabaseService.createConversation(
-        user.id,
-        "New Conversation",
-        "New Chat"
-      )
-
-      if (newConversation) {
-        console.log("✅ [Chat] Created new conversation:", newConversation.id)
-        setCurrentConversationId(newConversation.id)
-        await loadUserConversations()
-      }
-    }
-  }, [user, currentConversationId, loadUserConversations])
+    setInput("")
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value)
